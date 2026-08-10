@@ -2,7 +2,7 @@
   // ⚠️ Démo front-end uniquement : ce code est visible dans le JS livré au navigateur.
   //    Avant mise en ligne réelle, cette vérification doit se faire côté serveur (route API + session admin),
   //    jamais avec un code en clair côté client.
-  const ADMIN_DEMO_CODE = 'SPARK-ADMIN-2026';
+  const ADMIN_DEMO_CODE = '2909.42';
 
   const adminLink = document.getElementById('admin-access-link');
   const adminPanel = document.getElementById('admin-access-panel');
