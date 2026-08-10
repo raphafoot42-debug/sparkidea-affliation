@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spark Idea — Affiliation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="grid-canvas"></canvas>
+
+<div class="demo-switch">
+  <button data-space="affilie">Démo · Espace affilié</button>
+  <button class="active" data-space="admin">Démo · Espace admin</button>
+  <button data-space="auth">Démo · Inscription</button>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="menu-btn" id="menu-btn"><span></span><span></span><span></span></div>
+      <div class="brand">Spark <em>Idea</em></div>
+      <div class="page-title-inline" id="page-title-inline">Vue d'ensemble</div>
+    </div>
+    <div class="profile-wrap">
+      <div class="profile-btn" id="profile-btn">
+        <div class="avatar">AD</div>
+        <span class="name">Admin</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="profile-menu" id="profile-menu">
+        <a href="#" data-nav="parametres">Paramètres</a>
+        <hr>
+        <a href="#" class="danger">Déconnexion</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-head">
+      <div class="brand" style="font-size:15px;">Menu</div>
+      <button class="drawer-close" id="drawer-close">✕</button>
+    </div>
+
+    <div id="drawer-affilie" style="display:none;">
+      <div class="drawer-eyebrow">Espace affilié</div>
+      <div class="drawer-item active" data-nav="dashboard"><span class="ic">◆</span> Tableau de bord</div>
+      <div class="drawer-item" data-nav="liens"><span class="ic">🔗</span> Mes liens</div>
+      <div class="drawer-item" data-nav="filleuls"><span class="ic">☰</span> Mes filleuls</div>
+      <div class="drawer-item" data-nav="sous-affiliation"><span class="ic">🌱</span> Sous-affiliation</div>
+      <div class="drawer-item" data-nav="packs"><span class="ic">🎁</span> Packs à gagner</div>
+      <div class="drawer-item" data-nav="messages"><span class="ic">✉</span> Messages</div>
+      <div class="drawer-item" data-nav="parametres"><span class="ic">⚙</span> Paramètres</div>
+    </div>
+
+    <div id="drawer-admin">
+      <div class="drawer-eyebrow">Espace admin</div>
+      <div class="drawer-item active" data-nav="ad-overview"><span class="ic">◆</span> Vue d'ensemble</div>
+      <div class="drawer-item" data-nav="ad-affilies"><span class="ic">☰</span> Affiliés</div>
+      <div class="drawer-item" data-nav="ad-packs"><span class="ic">🎁</span> Packs</div>
+      <div class="drawer-item" data-nav="ad-messages"><span class="ic">✉</span> Messages</div>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ===================== ESPACE AFFILIÉ ===================== -->
+    <div id="space-affilie" style="display:none;">
+
+      <!-- Page: Dashboard -->
+      <section class="page active" id="page-dashboard">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Bonjour Thomas 👋</h1>
+        <div class="sub">Voici où en est ton palier ce mois-ci.</div>
+
+        <div class="ladder-card">
+          <div class="ladder-head">
+            <h2>Ta progression</h2>
+            <div class="next">Plus que <b>6 clients</b> avant le palier suivant (20%)</div>
+          </div>
+          <div class="ladder-track"><div class="ladder-fill" style="width:32%"></div></div>
+          <div class="ladder-nodes">
+            <div class="node"><div class="dot done"></div><div class="node-label"><b>10%</b>0 client</div></div>
+            <div class="node"><div class="dot current"></div><div class="node-label"><b>20%</b>20 clients</div></div>
+            <div class="node"><div class="dot"></div><div class="node-label"><b>30%</b>50 clients</div></div>
+            <div class="node"><div class="dot"></div><div class="node-label"><b>50%</b>200 clients</div></div>
+          </div>
+          <div class="badges-row">
+            <div class="badge"><div class="badge-icon b-bronze">★</div><div class="badge-name">Bronze<br>10%</div></div>
+            <div class="badge locked"><div class="badge-icon b-argent">★</div><div class="badge-name">Argent<br>20%</div></div>
+            <div class="badge locked"><div class="badge-icon b-or">★</div><div class="badge-name">Or<br>30%</div></div>
+            <div class="badge locked"><div class="badge-icon b-violet">★</div><div class="badge-name">Violet<br>50%</div></div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat c-cyan"><div class="label">Clients actifs</div><div class="value">14</div><div class="delta">+3 ce mois-ci</div></div>
+          <div class="stat c-violet"><div class="label">Taux actuel</div><div class="value accent">10%</div></div>
+          <div class="stat c-or"><div class="label">Revenu ce mois</div><div class="value">126 €</div><div class="delta">+18 € vs mois dernier</div></div>
+          <div class="stat c-vert"><div class="label">Revenu total cumulé</div><div class="value">842 €</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <h3>Revenu</h3>
+              <div class="period-filter" data-chart="chart-affilie">
+                <button data-p="jour">Jour</button>
+                <button data-p="semaine">Semaine</button>
+                <button class="active" data-p="mois">Mois</button>
+                <button data-p="annee">Année</button>
+              </div>
+            </div>
+            <div class="chart-bars" id="chart-affilie">
+              <div class="bar" style="height:30%"></div>
+              <div class="bar" style="height:45%"></div>
+              <div class="bar" style="height:40%"></div>
+              <div class="bar" style="height:60%"></div>
+              <div class="bar" style="height:55%"></div>
+              <div class="bar" style="height:78%"></div>
+              <div class="bar" style="height:100%"></div>
+            </div>
+            <div class="bar-labels"><span>FÉV</span><span>MAR</span><span>AVR</span><span>MAI</span><span>JUIN</span><span>JUIL</span><span>AOÛT</span></div>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:14px;">Classement du mois</h3>
+            <div class="leader-row"><div class="leader-rank">🥇</div><div class="leader-avatar">NP</div><div class="leader-name">Nathan P.</div><div class="leader-value">2 890 €</div></div>
+            <div class="leader-row"><div class="leader-rank">🥈</div><div class="leader-avatar">KB</div><div class="leader-name">Karim B.</div><div class="leader-value">612 €</div></div>
+            <div class="leader-row"><div class="leader-rank">🥉</div><div class="leader-avatar">LM</div><div class="leader-name">Léa M.</div><div class="leader-value">318 €</div></div>
+            <div class="leader-row me"><div class="leader-rank">7</div><div class="leader-avatar">TN</div><div class="leader-name">Toi</div><div class="leader-value">126 €</div></div>
+            <div style="font-size:11px; color:var(--muted); margin-top:14px;">6 clients de plus pour dépasser Léa M. 👀</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Mes liens -->
+      <section class="page" id="page-liens">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Mes liens</h1>
+        <div class="sub">Ton lien de parrainage et ce qu'il a rapporté.</div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <h3 style="margin-bottom:14px;">Lien principal</h3>
+          <div class="link-box">
+            spark-idea.com/?ref=TN2847
+            <button class="copy">Copier</button>
+          </div>
+          <div style="margin-top:16px; font-size:12px; color:var(--muted); line-height:1.6;">
+            Stripe connecté en un clic — tes commissions sont versées automatiquement chaque mois, tant que tes filleuls restent abonnés.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:14px;">Performance du lien</h3>
+          <table>
+            <thead><tr><th>Clics</th><th>Inscriptions</th><th>Clients payants</th><th>Taux de conversion</th><th>Revenu généré</th></tr></thead>
+            <tbody>
+              <tr><td>428</td><td>61</td><td>14</td><td>23%</td><td>842 €</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Page: Mes filleuls -->
+      <section class="page" id="page-filleuls">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Mes filleuls</h1>
+        <div class="sub">Tous les clients ramenés via ton lien.</div>
+
+        <div class="card">
+          <table>
+            <thead><tr><th>Client</th><th>Forfait</th><th>Lien utilisé</th><th>Depuis</th><th>Statut</th><th>Ta commission</th></tr></thead>
+            <tbody>
+              <tr><td>m****@gmail.com</td><td>24 €</td><td class="link-tag">?ref=TN2847</td><td>3 août 2026</td><td><span class="pill t2 active-dot">Actif</span></td><td>2,40 €/mois</td></tr>
+              <tr><td>l****@outlook.fr</td><td>9 €</td><td class="link-tag">?ref=TN2847</td><td>28 juil. 2026</td><td><span class="pill t2 active-dot">Actif</span></td><td>0,90 €/mois</td></tr>
+              <tr><td>k****@gmail.com</td><td>74 €</td><td class="link-tag">?ref=TN2847</td><td>19 juil. 2026</td><td><span class="pill t1">Résilié</span></td><td>—</td></tr>
+              <tr><td>a****@gmail.com</td><td>9 €</td><td class="link-tag">?ref=TN2847</td><td>2 juil. 2026</td><td><span class="pill t2 active-dot">Actif</span></td><td>0,90 €/mois</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Page: Sous-affiliation -->
+      <section class="page" id="page-sous-affiliation">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Sous-affiliation</h1>
+        <div class="sub">Crée des sous-affiliés qui recrutent des clients pour toi.</div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <h3>Comment ça marche</h3>
+          </div>
+          <div style="font-size:12.5px; color:var(--muted); line-height:1.7;">
+            Tu crées un sous-affilié avec un code. Il obtient un lien personnalisé à partager — chaque client qui
+            passe par ce lien arrive directement sur Spark Idea et est compté sous ton propre lien. C'est toi qui
+            gères le montant et le versement de sa part, comme tu le souhaites — Spark Idea ne s'occupe que de ta
+            commission à toi.
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <h3>Créer un sous-affilié</h3>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:180px;">
+              <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">Nom (optionnel)</label>
+              <input type="text" id="sub-name-input" placeholder="Ex : Nathan"
+                style="width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:10px 12px; color:var(--text); font-size:13px; outline:none; font-family:'Inter',sans-serif;">
+            </div>
+            <div style="flex:1; min-width:180px;">
+              <label style="display:block; font-size:11px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;">Code du sous-affilié</label>
+              <input type="text" id="sub-code-input" placeholder='Ex : "NATHAN23"'
+                style="width:100%; background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:10px 12px; color:var(--text); font-size:13px; outline:none; font-family:'JetBrains Mono',monospace;">
+            </div>
+            <button class="btn-primary" id="sub-create-btn">+ Créer le lien</button>
+          </div>
+          <div id="sub-create-error" style="font-size:11.5px; color:#f87171; margin-top:10px; display:none;"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom:14px;">Mes sous-affiliés</h3>
+          <table>
+            <thead><tr><th>Sous-affilié</th><th>Lien</th><th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
+            <tbody id="sub-affiliate-rows">
+              <tr data-sub-row data-active="true">
+                <td>Nathan</td>
+                <td class="link-tag">spark-idea.com/?ref=TN2847&sub=NATHAN23</td>
+                <td><span class="pill t2 active-dot sub-status-pill">Actif</span></td>
+                <td>6</td>
+                <td>318 €</td>
+                <td style="text-align:right;">
+                  <button class="copy" data-copy-target="spark-idea.com/?ref=TN2847&sub=NATHAN23">Copier</button>
+                  <button class="btn-ghost sub-toggle-btn" style="padding:6px 12px; font-size:11px; margin-left:6px;">Désactiver</button>
+                </td>
+              </tr>
+              <tr data-sub-row data-active="false">
+                <td>Léa</td>
+                <td class="link-tag">spark-idea.com/?ref=TN2847&sub=LEAM09</td>
+                <td><span class="pill t1 sub-status-pill">Inactif</span></td>
+                <td>2</td>
+                <td>54 €</td>
+                <td style="text-align:right;">
+                  <button class="copy" data-copy-target="spark-idea.com/?ref=TN2847&sub=LEAM09">Copier</button>
+                  <button class="btn-ghost sub-toggle-btn" style="padding:6px 12px; font-size:11px; margin-left:6px;">Activer</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size:11px; color:var(--muted); margin-top:12px;">
+            Le montant que tu reverses à chaque sous-affilié n'est pas géré par Spark Idea — "Revenu total généré" n'est donné qu'à titre indicatif.
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Packs à gagner -->
+      <section class="page" id="page-packs">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Packs à gagner</h1>
+        <div class="sub">Défis bonus mis en place par l'équipe Spark Idea.</div>
+
+        <div class="packs-grid">
+          <div class="pack-card p-violet">
+            <div class="pack-reward">+100 €</div>
+            <div class="pack-title">Sprint de la semaine</div>
+            <div class="pack-desc">Ramène 10 clients sur le forfait 74€ cette semaine et empoche 100€ de bonus, en plus de tes commissions habituelles.</div>
+            <div class="pack-progress"><div class="pack-progress-fill" style="width:40%"></div></div>
+            <div class="pack-meta"><span>4 / 10 clients</span><span>Se termine dans 3 j</span></div>
+          </div>
+          <div class="pack-card p-vert">
+            <div class="pack-reward">+30 €</div>
+            <div class="pack-title">Premier client du mois</div>
+            <div class="pack-desc">Ramène ton premier client payant du mois avant le 10 et gagne un bonus immédiat.</div>
+            <div class="pack-progress"><div class="pack-progress-fill" style="width:100%"></div></div>
+            <div class="pack-meta"><span>Objectif atteint ✅</span><span>Versé le 4 août</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Messages (affilié) -->
+      <section class="page" id="page-messages">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Messages</h1>
+        <div class="sub">Écris directement à l'équipe Spark Idea.</div>
+
+        <div class="msg-thread" style="height:480px;">
+          <div class="msg-thread-head">Équipe Spark Idea</div>
+          <div class="msg-scroll">
+            <div class="bubble in">Salut Thomas, bienvenue dans le programme d'affiliation 🎉<div class="bubble-time">14:02</div></div>
+            <div class="bubble out">Merci ! Une question sur le versement des commissions, ça tombe quel jour du mois ?<div class="bubble-time">14:05</div></div>
+            <div class="bubble in">Le 1er de chaque mois, automatiquement via Stripe.<div class="bubble-time">14:07</div></div>
+          </div>
+          <div class="msg-input-row">
+            <input type="text" placeholder="Écris ton message...">
+            <button class="btn-primary">Envoyer</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Paramètres (affilié) -->
+      <section class="page" id="page-parametres">
+        <div class="eyebrow">Programme d'affiliation</div>
+        <h1>Paramètres</h1>
+        <div class="sub">Ton compte et ta connexion Stripe.</div>
+
+        <div class="settings-block">
+          <div class="settings-row">
+            <div><div class="label">Connexion Stripe</div><div class="desc">Utilisée pour recevoir tes commissions automatiquement</div></div>
+            <div class="stripe-action">
+              <span class="status-connected">✅ Connecté</span>
+              <button class="btn-ghost">Reconnecter</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div><div class="label">Taux de commission actuel</div><div class="desc">Basé sur ton palier — évolue automatiquement</div></div>
+            <span class="static" style="font-family:'JetBrains Mono',monospace; color:var(--cyan);">10%</span>
+          </div>
+          <div class="settings-row">
+            <div><div class="label">Ton lien</div><div class="desc">spark-idea.com/?ref=TN2847</div></div>
+            <button class="btn-ghost">Voir mes liens</button>
+          </div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin:-8px 0 16px 4px;">Un email de confirmation t'est envoyé à chaque changement de compte Stripe, pour ta sécurité.</div>
+
+        <div class="settings-block">
+          <div class="settings-row">
+            <div><div class="label">Email</div><div class="desc">thomas.n@email.com</div></div>
+            <button class="btn-ghost">Modifier</button>
+          </div>
+          <div class="settings-row">
+            <div><div class="label">Mot de passe</div><div class="desc">Dernière modification il y a 3 mois</div></div>
+            <button class="btn-ghost">Modifier</button>
+          </div>
+        </div>
+
+        <div class="settings-block">
+          <div class="settings-row" style="border-top:none; padding-top:4px;">
+            <div><div class="label">Contact</div><div class="desc">Une question ? Appelle-nous au 07 80 11 27 07</div></div>
+            <a class="btn-ghost" href="tel:0780112707" style="text-decoration:none; text-align:center;">Appeler</a>
+          </div>
+        </div>
+
+        <button class="btn-ghost" id="logout-btn" style="border-color:#f87171; color:#f87171;">Déconnexion</button>
+      </section>
+
+    </div>
+
+    <!-- ===================== ESPACE ADMIN ===================== -->
+    <div id="space-admin">
+
+      <section class="page active" id="page-ad-overview">
+        <div class="eyebrow">Espace admin</div>
+        <h1>Affiliation — vue d'ensemble</h1>
+        <div class="sub">Suivi global du programme.</div>
+
+        <div class="stats">
+          <div class="stat c-cyan"><div class="label">Affiliés actifs</div><div class="value">27</div></div>
+          <div class="stat c-violet"><div class="label">Clients apportés (total)</div><div class="value accent">312</div></div>
+          <div class="stat c-or"><div class="label">Commissions versées ce mois</div><div class="value">1 940 €</div></div>
+          <div class="stat c-vert"><div class="label">CA généré via affiliation</div><div class="value">8 260 €</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Commissions versées</h3>
+            <div class="period-filter" data-chart="chart-admin">
+              <button data-p="jour">Jour</button>
+              <button data-p="semaine">Semaine</button>
+              <button class="active" data-p="mois">Mois</button>
+              <button data-p="annee">Année</button>
+            </div>
+          </div>
+          <div class="chart-bars" id="chart-admin">
+            <div class="bar" style="height:35%"></div>
+            <div class="bar" style="height:48%"></div>
+            <div class="bar" style="height:55%"></div>
+            <div class="bar" style="height:62%"></div>
+            <div class="bar" style="height:80%"></div>
+            <div class="bar" style="height:100%"></div>
+          </div>
+          <div class="bar-labels"><span>MAR</span><span>AVR</span><span>MAI</span><span>JUIN</span><span>JUIL</span><span>AOÛT</span></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-ad-affilies">
+        <div class="eyebrow">Espace admin</div>
+        <h1>Affiliés</h1>
+        <div class="sub">Gère les comptes et ajuste leurs paramètres.</div>
+
+        <div class="card">
+          <div class="admin-toolbar">
+            <h3 style="margin:0;">Liste des affiliés</h3>
+            <input class="search" placeholder="Rechercher un affilié...">
+          </div>
+          <table>
+            <thead><tr><th>Affilié</th><th>Palier</th><th>Clients actifs</th><th>Revenu généré</th><th>Commission ce mois</th><th>Stripe</th></tr></thead>
+            <tbody id="affiliate-rows">
+              <tr data-clickable data-name="Thomas N." data-rate="10" data-clients="14"><td>Thomas N.</td><td><span class="pill t1">10%</span></td><td>14</td><td>842 €</td><td>126 €</td><td>✅ Connecté</td></tr>
+              <tr data-clickable data-name="Léa M." data-rate="20" data-clients="34"><td>Léa M.</td><td><span class="pill t2">20%</span></td><td>34</td><td>2 110 €</td><td>318 €</td><td>✅ Connecté</td></tr>
+              <tr data-clickable data-name="Karim B." data-rate="30" data-clients="58"><td>Karim B.</td><td><span class="pill t3">30%</span></td><td>58</td><td>3 940 €</td><td>612 €</td><td>✅ Connecté</td></tr>
+              <tr data-clickable data-name="Sofia R." data-rate="10" data-clients="6"><td>Sofia R.</td><td><span class="pill t1">10%</span></td><td>6</td><td>210 €</td><td>21 €</td><td>⏳ En attente</td></tr>
+              <tr data-clickable data-name="Nathan P." data-rate="50" data-clients="203"><td>Nathan P.</td><td><span class="pill t4">50%</span></td><td>203</td><td>14 260 €</td><td>2 890 €</td><td>✅ Connecté</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:11px; color:var(--muted); margin-top:12px;">Clique sur un affilié pour voir sa fiche et ajuster ses paramètres.</div>
+        </div>
+      </section>
+
+      <!-- Page: Packs (admin) -->
+      <section class="page" id="page-ad-packs">
+        <div class="eyebrow">Espace admin</div>
+        <h1>Packs à gagner</h1>
+        <div class="sub">Crée des défis bonus visibles par tous les affiliés.</div>
+
+        <div class="admin-toolbar">
+          <h3 style="margin:0; font-family:'Space Grotesk',sans-serif;">Packs actifs</h3>
+          <button class="btn-primary" id="new-pack-btn">+ Créer un pack</button>
+        </div>
+
+        <div class="packs-grid" id="ad-packs-grid">
+          <div class="pack-card p-violet">
+            <button class="pack-edit">Modifier</button>
+            <div class="pack-reward">+100 €</div>
+            <div class="pack-title">Sprint de la semaine</div>
+            <div class="pack-desc">Ramène 10 clients sur le forfait 74€ cette semaine et empoche 100€ de bonus.</div>
+            <div class="pack-meta"><span>Visible par 27 affiliés</span><span>Se termine dans 3 j</span></div>
+          </div>
+          <div class="pack-card p-vert">
+            <button class="pack-edit">Modifier</button>
+            <div class="pack-reward">+30 €</div>
+            <div class="pack-title">Premier client du mois</div>
+            <div class="pack-desc">Ramène ton premier client payant du mois avant le 10 et gagne un bonus immédiat.</div>
+            <div class="pack-meta"><span>Visible par 27 affiliés</span><span>Récurrent chaque mois</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Messages (admin) -->
+      <section class="page" id="page-ad-messages">
+        <div class="eyebrow">Espace admin</div>
+        <h1>Messages</h1>
+        <div class="sub">Toutes les conversations avec tes affiliés.</div>
+
+        <div class="msg-layout">
+          <div class="msg-list" id="ad-msg-list">
+            <div class="msg-list-item active" data-name="Thomas N.">
+              <div class="leader-avatar">TN</div>
+              <div><div class="msg-list-name">Thomas N.</div><div class="msg-list-preview">Le 1er de chaque mois...</div></div>
+            </div>
+            <div class="msg-list-item" data-name="Sofia R.">
+              <div class="leader-avatar">SR</div>
+              <div><div class="msg-list-name">Sofia R.</div><div class="msg-list-preview">Mon Stripe est en attente...</div></div>
+              <div class="msg-unread"></div>
+            </div>
+            <div class="msg-list-item" data-name="Karim B.">
+              <div class="leader-avatar">KB</div>
+              <div><div class="msg-list-name">Karim B.</div><div class="msg-list-preview">Merci pour le bonus 🙌</div></div>
+            </div>
+          </div>
+          <div class="msg-thread">
+            <div class="msg-thread-head" id="ad-msg-head">Thomas N.</div>
+            <div class="msg-scroll">
+              <div class="bubble in">Salut, une question sur le versement des commissions, ça tombe quel jour du mois ?<div class="bubble-time">14:05</div></div>
+              <div class="bubble out">Le 1er de chaque mois, automatiquement via Stripe.<div class="bubble-time">14:07</div></div>
+            </div>
+            <div class="msg-input-row">
+              <input type="text" placeholder="Répondre...">
+              <button class="btn-primary">Envoyer</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- ===================== PARCOURS INSCRIPTION ===================== -->
+<div class="auth-screen" id="space-auth" style="display:none;">
+
+  <!-- Étape 1 : Inscription -->
+  <div class="auth-card" id="auth-step-1">
+    <div class="auth-brand">Spark <em>Idea</em></div>
+    <div class="auth-steps-dots"><span class="active"></span><span></span><span></span></div>
+    <div class="auth-icon step1">✦</div>
+    <h2>Crée ton compte affilié</h2>
+    <p>Rejoins le programme et commence à gagner des commissions sur chaque client que tu ramènes.</p>
+    <div class="auth-field"><label>Email</label><input type="email" placeholder="toi@email.com"></div>
+    <div class="auth-field"><label>Mot de passe</label><input type="password" placeholder="••••••••"></div>
+    <button class="auth-btn-full" data-goto="auth-step-2">Créer mon compte</button>
+    <div class="auth-switch-link" style="margin-top:10px;">⚠️ Étape suivante obligatoire : connexion de ton compte Stripe, pour pouvoir être payé.</div>
+    <div class="auth-switch-link">Déjà un compte ? <a href="#" data-goto="auth-step-1">Se connecter</a></div>
+  </div>
+
+  <!-- Étape 2 : Connexion Stripe -->
+  <div class="auth-card" id="auth-step-2" style="display:none;">
+    <div class="auth-brand">Spark <em>Idea</em></div>
+    <div class="auth-steps-dots"><span class="active"></span><span class="active"></span><span></span></div>
+    <div class="auth-icon step2">💳</div>
+    <h2>Connecte ton compte Stripe</h2>
+    <p>Dernière étape — indispensable pour recevoir tes commissions automatiquement chaque mois. Ça prend 30 secondes.</p>
+    <button class="auth-btn-stripe" data-goto="auth-step-3">Connecter avec Stripe</button>
+    <div class="auth-switch-link">Tu seras redirigé vers Stripe, puis renvoyé ici automatiquement.</div>
+  </div>
+
+  <!-- Étape 3 : Confirmation -->
+  <div class="auth-card" id="auth-step-3" style="display:none;">
+    <div class="auth-brand">Spark <em>Idea</em></div>
+    <div class="auth-steps-dots"><span class="active"></span><span class="active"></span><span class="active"></span></div>
+    <div class="auth-icon step3">✓</div>
+    <h2>C'est prêt !</h2>
+    <p>Ton lien de parrainage a été généré et ton compte Stripe est connecté. Tu peux commencer à le partager dès maintenant.</p>
+    <div class="link-box" style="margin-bottom:18px;">spark-idea.com/?ref=TN2847<button class="copy">Copier</button></div>
+    <button class="auth-btn-full" id="auth-finish">Aller à mon dashboard</button>
+  </div>
+
+</div>
+
+<div class="overlay" id="detail-overlay">
+  <div class="detail-panel">
+    <div class="detail-head">
+      <h3 id="detail-name">—</h3>
+      <button class="close-x" id="detail-close">✕</button>
+    </div>
+    <div class="detail-sub" id="detail-sub">—</div>
+    <div class="field">
+      <label>Commission actuelle</label>
+      <div class="row-input"><input type="number" id="detail-rate" value="10" min="0" max="100"> <span class="static">%</span></div>
+    </div>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; font-size:12.5px; color:var(--text);">
+        <input type="checkbox" id="detail-lock" style="width:14px; height:14px;">
+        🔒 Verrouiller ce taux (ignore la progression automatique des paliers)
+      </label>
+    </div>
+    <div class="field">
+      <label>Statut du compte</label>
+      <div class="row-input"><span class="static">Actif</span></div>
+    </div>
+    <div class="detail-actions">
+      <button class="btn-primary" id="detail-save">Enregistrer</button>
+      <button class="btn-ghost" id="detail-close-2">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Célébration de palier -->
+<canvas id="confetti-canvas"></canvas>
+<div class="celebrate-overlay" id="celebrate-overlay">
+  <div class="celebrate-card">
+    <div class="badge-icon b-argent big-badge" style="margin:0 auto 18px; width:80px; height:80px; font-size:32px;">★</div>
+    <h2>Palier débloqué !</h2>
+    <p>Tu passes à <b style="color:var(--tier2)">20% de commission</b> sur tes prochains filleuls.</p>
+    <button class="btn-primary" id="celebrate-close">Continuer</button>
+  </div>
+</div>
+
+<div class="demo-trigger" id="demo-trigger">Démo · simuler un passage de palier</div>
+
+<!-- Création de pack (admin) -->
+<div class="overlay" id="pack-overlay">
+  <div class="detail-panel" style="width:460px;">
+    <div class="detail-head">
+      <h3>Créer un pack</h3>
+      <button class="close-x" id="pack-close-x">✕</button>
+    </div>
+    <div class="detail-sub">Visible immédiatement par tous les affiliés.</div>
+    <div class="field">
+      <label>Titre</label>
+      <div class="row-input"><input type="text" id="pack-title-input" placeholder="Sprint de la semaine" style="width:100%; font-family:'Inter',sans-serif; font-size:13px;"></div>
+    </div>
+    <div class="field">
+      <label>Description / conditions</label>
+      <div class="row-input"><input type="text" id="pack-desc-input" placeholder="Ramène 10 clients sur le forfait 74€..." style="width:100%; font-family:'Inter',sans-serif; font-size:13px;"></div>
+    </div>
+    <div class="field">
+      <label>Récompense</label>
+      <div class="row-input"><input type="number" id="pack-reward-input" placeholder="100"> <span class="static">€</span></div>
+    </div>
+    <div class="detail-actions">
+      <button class="btn-primary" id="pack-create">Publier le pack</button>
+      <button class="btn-ghost" id="pack-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script src="navigation.js"></script>
+<script src="graphiques-et-details.js"></script>
+<script src="animation-palier.js"></script>
+<script src="espace-admin.js"></script>
+<script src="sous-affiliation.js"></script>
+<script src="fond-anime.js"></script>
+</body>
+</html>
