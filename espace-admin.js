@@ -1,33 +1,44 @@
-  // Admin messages: switch conversation
-  document.querySelectorAll('#ad-msg-list .msg-list-item').forEach(item=>{
-    item.addEventListener('click', ()=>{
-      document.querySelectorAll('#ad-msg-list .msg-list-item').forEach(i=>i.classList.remove('active'));
-      item.classList.add('active');
-      item.querySelector('.msg-unread')?.remove();
-      document.getElementById('ad-msg-head').textContent = item.dataset.name;
-    });
-  });
+// Accès admin direct depuis l'écran d'inscription (évite de passer par le parcours d'inscription complet)
+  // ⚠️ Démo front-end uniquement : ce code est visible dans le JS livré au navigateur.
+  //    Avant mise en ligne réelle, cette vérification doit se faire côté serveur (route API + session admin),
+  //    jamais avec un code en clair côté client.
+  const ADMIN_DEMO_CODE = 'SPARK-ADMIN-2026';
 
-  // Admin: create pack modal
-  const packOverlay = document.getElementById('pack-overlay');
-  document.getElementById('new-pack-btn').addEventListener('click', ()=> packOverlay.classList.add('active'));
-  document.getElementById('pack-cancel').addEventListener('click', ()=> packOverlay.classList.remove('active'));
-  document.getElementById('pack-close-x').addEventListener('click', ()=> packOverlay.classList.remove('active'));
-  packOverlay.addEventListener('click', e=>{ if(e.target===packOverlay) packOverlay.classList.remove('active'); });
-  document.getElementById('pack-create').addEventListener('click', ()=>{
-    const title = document.getElementById('pack-title-input').value || 'Nouveau pack';
-    const reward = document.getElementById('pack-reward-input').value || '0';
-    const desc = document.getElementById('pack-desc-input').value || '';
-    const card = document.createElement('div');
-    card.className = 'pack-card';
-    card.innerHTML = `<button class="pack-edit">Modifier</button>
-      <div class="pack-reward">+${reward} €</div>
-      <div class="pack-title">${title}</div>
-      <div class="pack-desc">${desc}</div>
-      <div class="pack-meta"><span>Visible par 27 affiliés</span><span>Nouveau</span></div>`;
-    document.getElementById('ad-packs-grid').prepend(card);
-    packOverlay.classList.remove('active');
-    document.getElementById('pack-title-input').value='';
-    document.getElementById('pack-reward-input').value='';
-    document.getElementById('pack-desc-input').value='';
-  });
+  const adminLink = document.getElementById('admin-access-link');
+  const adminPanel = document.getElementById('admin-access-panel');
+  if (adminLink) {
+    adminLink.addEventListener('click', e => {
+      e.preventDefault();
+      adminPanel.style.display = adminPanel.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const adminSubmit = document.getElementById('admin-code-submit');
+  if (adminSubmit) {
+    adminSubmit.addEventListener('click', () => {
+      const input = document.getElementById('admin-code-input');
+      const error = document.getElementById('admin-code-error');
+
+      if (input.value.trim() !== ADMIN_DEMO_CODE) {
+        error.style.display = 'block';
+        return;
+      }
+      error.style.display = 'none';
+
+      // Saute l'inscription et le login : ouvre directement l'espace admin
+      document.querySelectorAll('.demo-switch button').forEach(b => b.classList.remove('active'));
+      document.querySelector('.demo-switch button[data-space="admin"]').classList.add('active');
+      document.querySelector('.app').style.display = 'block';
+      document.getElementById('space-auth').style.display = 'none';
+      document.getElementById('space-affilie').style.display = 'none';
+      document.getElementById('space-admin').style.display = 'block';
+      document.getElementById('drawer-affilie').style.display = 'none';
+      document.getElementById('drawer-admin').style.display = 'block';
+      document.getElementById('page-title-inline').textContent = "Vue d'ensemble";
+      document.querySelector('.avatar').textContent = 'AD';
+      document.querySelector('.profile-btn .name').textContent = 'Admin';
+
+      input.value = '';
+      adminPanel.style.display = 'none';
+    });
+  }
