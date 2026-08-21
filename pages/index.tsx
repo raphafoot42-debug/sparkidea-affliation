@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 export default function HomePage() {
-  return (
+  return ( 
     <div className="auth-screen">
       <div className="auth-card">
         <div className="auth-brand">
