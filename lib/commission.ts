@@ -4,7 +4,7 @@ import { createAdminClient } from './supabase-admin'
  * Calcule et met à jour le taux de commission d'un affilié.
  * Règles (validées avec Raphaël) :
  *  - Le taux suit automatiquement les paliers selon active_clients_count
- *  - SAUF si rate_locked = true → l'admin a forcé un taux manuellement,
+ *  - SAUF si rate_locked = true → l'admin a forcé un taux manuellement, 
  *    il reste figé tant qu'il ne le change pas lui-même
  *  - Le changement de palier ne s'applique qu'aux NOUVEAUX clients à partir
  *    de ce moment (le taux appliqué à un filleul existant est figé dans
