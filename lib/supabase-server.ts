@@ -1,7 +1,7 @@
 import { createServerClient, serializeCookieHeader, type CookieOptions } from '@supabase/ssr'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-// Utilisé dans les routes API (pages/api/**).
+// Utilisé dans les routes API (pages/api/**). 
 // Respecte les policies RLS — un affilié ne peut lire que ses propres données.
 export function createClient(req: NextApiRequest, res: NextApiResponse) {
   return createServerClient(
