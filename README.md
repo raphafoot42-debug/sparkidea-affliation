@@ -1,4 +1,4 @@
-# Spark Idea — Système d'affiliation
+# Spark Idea — Système d'affiliation 
 
 ## Structure
 
