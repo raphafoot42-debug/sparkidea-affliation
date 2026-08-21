@@ -1,4 +1,4 @@
--- À exécuter après schema.sql dans le SQL Editor de Supabase
+-- À exécuter après schema.sql dans le SQL Editor de Supabase 
 
 create or replace function increment_active_clients(affiliate_id uuid)
 returns void as $$
