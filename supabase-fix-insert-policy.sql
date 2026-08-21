@@ -1,4 +1,4 @@
--- Correction : il manquait la permission d'INSERTION dans la table affiliates.
+-- Correction : il manquait la permission d'INSERTION dans la table affiliates. 
 -- Sans elle, l'inscription crée bien le compte (auth) mais échoue à créer
 -- la fiche affilié juste après (RLS bloque silencieusement l'insert).
 
