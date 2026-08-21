@@ -1,5 +1,5 @@
 -- ============================================================
--- Spark Idea — Script complet à coller EN UNE FOIS
+-- Spark Idea — Script complet à coller EN UNE FOIS 
 -- Supabase → SQL Editor → New query → coller tout → Run
 -- ============================================================
 
