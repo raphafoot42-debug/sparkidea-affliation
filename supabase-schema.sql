@@ -2,7 +2,7 @@
 -- Spark Idea — Schéma d'affiliation
 -- À exécuter dans Supabase : Dashboard → SQL Editor → New query
 -- ============================================================
-
+ 
 -- Table des affiliés
 create table if not exists affiliates (
   id uuid primary key references auth.users(id) on delete cascade,
