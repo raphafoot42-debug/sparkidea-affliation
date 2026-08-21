@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
 
-// ⚠️ TODO avant mise en prod : vérifier que l'appelant est bien admin
+// ⚠️ TODO avant mise en prod : vérifier que l'appelant est bien admin 
 // (même limitation que sur affiliate-rate.ts et packs.ts — pas encore de
 // colonne is_admin dans le projet). Pour l'instant, protégé uniquement par
 // le fait que l'URL /admin n'est accessible qu'via le code d'accès admin
