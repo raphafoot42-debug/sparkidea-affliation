@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase-client'
 
 function generateReferralCode(email: string) {
-  const prefix = email.slice(0, 2).toUpperCase()
+  const prefix = email.slice(0, 2).toUpperCase() 
   const suffix = Math.floor(1000 + Math.random() * 9000)
   return `${prefix}${suffix}`
 }
