@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { recalculateAffiliateRate } from '@/lib/commission' 
 import Stripe from 'stripe'
 
-// Stripe appelle cette URL automatiquement à chaque évènement de paiement.
+// Stripe appelle cette URL automatiquement à chaque évènement de paiement. 
 // C'est ce qui rend TOUT le système automatique — aucune action manuelle.
 // ⚠️ Cette URL a changé (avant : /api/stripe/webhook) : pense à la mettre à
 // jour dans ton dashboard Stripe (Developers → Webhooks).
