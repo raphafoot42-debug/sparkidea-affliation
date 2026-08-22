@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 // d'être redirigé ici).
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const affiliateId = req.query.aff as string | undefined
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!.replace(/\/+$/, '')
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!.replace(/\/+$/, '') 
 
   if (!affiliateId) {
     return res.redirect(`${appUrl}/dashboard?stripe_error=1`)
