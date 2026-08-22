@@ -1,7 +1,7 @@
 -- À exécuter après schema.sql dans le SQL Editor de Supabase 
 
 create or replace function increment_active_clients(affiliate_id uuid)
-returns void as $$
+returns void as $$ 
   update affiliates
   set active_clients_count = active_clients_count + 1
   where id = affiliate_id;
