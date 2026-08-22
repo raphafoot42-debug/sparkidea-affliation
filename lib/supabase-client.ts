@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr' 
 
 // Utilisé dans les composants React côté client.
 // Ne connaît que la clé publique — ne peut jamais agir en admin. 
