@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { createClient } from '@/lib/supabase-client' 
- 
+import { createClient } from '@/lib/supabase-client'
+
 const pageTitles: Record<string, string> = {
   dashboard: 'Tableau de bord',
   liens: 'Mes liens',
@@ -20,6 +20,7 @@ type Affiliate = {
   rate_locked: boolean
   active_clients_count: number
   stripe_connected: boolean
+  parent_affiliate_id: string | null
 }
 type Referral = {
   id: string
@@ -47,6 +48,7 @@ type SubAffiliate = {
   active: boolean
   clients_count: number
   revenue_generated_cents: number
+  linked_affiliate_id: string | null
 }
 
 function maskEmail(email: string) {
@@ -105,7 +107,7 @@ export default function Dashboard() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.replace('/signup')
+        router.replace('/login')
         return
       }
 
@@ -440,10 +442,24 @@ export default function Dashboard() {
             <div className="card" style={{ marginBottom: 20 }}>
               <div className="card-head"><h3>Comment ça marche</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
-                Tu crées un sous-affilié avec un code. Il obtient un lien personnalisé à partager — chaque client qui
-                passe par ce lien arrive directement sur Spark Idea et est compté sous ton propre lien. C&apos;est toi qui
-                gères le montant et le versement de sa part, comme tu le souhaites — Spark Idea ne s&apos;occupe que de ta
-                commission à toi.
+                {affiliate.parent_affiliate_id ? (
+                  <>
+                    Tu crées un sous-affilié avec un code. Il obtient un lien pour ses clients, comptés sous ton
+                    compte. C&apos;est <b>toi</b> qui gères et verses sa part, comme tu le souhaites — Spark Idea ne
+                    s&apos;occupe que de ta commission à toi. (Comme tu es toi-même un sous-affilié activé, tes
+                    propres sous-affiliés ne peuvent pas être payés automatiquement par Spark Idea — c&apos;est
+                    plafonné à 2 niveaux.)
+                  </>
+                ) : (
+                  <>
+                    Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
+                    sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
+                    connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, sur son propre palier
+                    (10% → 20% → 30% → 50% selon ses clients à lui). Tant qu&apos;il ne l&apos;a pas fait, c&apos;est
+                    à toi de le payer toi-même. Une fois activé, il peut lui aussi créer des sous-affiliés — mais
+                    ceux-là restent toujours payés à la main par lui, jamais par Spark Idea.
+                  </>
+                )}
               </div>
             </div>
 
@@ -481,23 +497,42 @@ export default function Dashboard() {
                 <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun sous-affilié pour l&apos;instant.</div>
               ) : (
                 <table>
-                  <thead><tr><th>Sous-affilié</th><th>Lien</th><th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
+                  <thead><tr><th>Sous-affilié</th>{!affiliate.parent_affiliate_id && <th>Compte</th>}<th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
                   <tbody>
                     {subAffiliates.map((s) => {
-                      const subLink = `spark-idea.com/?ref=${affiliate.referral_code}&sub=${s.code}`
+                      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                      const clientLink = `spark-idea.com/?ref=${affiliate.referral_code}&sub=${s.code}`
+                      const inviteLink = `${origin}/signup?invite=${affiliate.referral_code}&subcode=${s.code}`
+                      const canInvite = !affiliate.parent_affiliate_id
                       return (
                         <tr key={s.id}>
                           <td>{s.name || s.code}</td>
-                          <td className="link-tag">{subLink}</td>
+                          {canInvite && (
+                            <td>
+                              {s.linked_affiliate_id ? (
+                                <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé (payé auto)</span>
+                              ) : (
+                                <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>
+                              )}
+                            </td>
+                          )}
                           <td><span className={`pill ${s.active ? 't2 active-dot' : 't1'}`}>{s.active ? 'Actif' : 'Inactif'}</span></td>
                           <td>{s.clients_count}</td>
                           <td>{euros(s.revenue_generated_cents)}</td>
                           <td style={{ textAlign: 'right' }}>
-                            <button className="copy" onClick={() => copyLink(subLink)}>{copiedLink === subLink ? 'Copié !' : 'Copier'}</button>
+                            <button className="copy" onClick={() => copyLink(clientLink)} title="Lien client">
+                              {copiedLink === clientLink ? 'Copié !' : 'Lien client'}
+                            </button>
+                            {canInvite && !s.linked_affiliate_id && (
+                              <button className="copy" style={{ marginLeft: 6 }} onClick={() => copyLink(inviteLink)} title="Lien d'invitation">
+                                {copiedLink === inviteLink ? 'Copié !' : 'Lien invitation'}
+                              </button>
+                            )}
                             <button className="btn-ghost" style={{ padding: '6px 12px', fontSize: 11, marginLeft: 6 }} onClick={() => toggleSubAffiliate(s)}>
                               {s.active ? 'Désactiver' : 'Activer'}
                             </button>
                           </td>
+
                         </tr>
                       )
                     })}
@@ -505,7 +540,7 @@ export default function Dashboard() {
                 </table>
               )}
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-                Le montant que tu reverses à chaque sous-affilié n&apos;est pas géré par Spark Idea — &quot;Revenu total généré&quot; n&apos;est donné qu&apos;à titre indicatif.
+                &quot;Revenu total généré&quot; est indicatif tant que le sous-affilié n&apos;a pas activé son compte. Une fois activé, il est payé automatiquement par Spark Idea, en plus de ta commission à toi.
               </div>
             </div>
           </section>
