@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { stripe } from '@/lib/stripe' 
 import { createAdminClient } from '@/lib/supabase-admin'
-import { recalculateAffiliateRate } from '@/lib/commission'
+import { recalculateAffiliateRate } from '@/lib/commission' 
 import Stripe from 'stripe'
 
 // Stripe appelle cette URL automatiquement à chaque évènement de paiement.
