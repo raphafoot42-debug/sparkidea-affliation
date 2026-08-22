@@ -1,5 +1,5 @@
 # Spark Idea — Système d'affiliation 
-
+ 
 ## Structure
 
 Ce projet utilise le "Pages Router" de Next.js (plutôt que le "App Router")
