@@ -2,7 +2,7 @@
 -- Spark Idea — Script complet à coller EN UNE FOIS 
 -- Supabase → SQL Editor → New query → coller tout → Run
 -- ============================================================
-
+ 
 -- Table des affiliés
 create table if not exists affiliates (
   id uuid primary key references auth.users(id) on delete cascade,
