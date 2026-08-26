@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client' 
  
 function generateReferralCode(email: string) {
   const prefix = email.slice(0, 2).toUpperCase() 
