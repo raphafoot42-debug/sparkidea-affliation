@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-client'
 // ⚠️ Démo front-end : ce code est visible dans le JS envoyé au navigateur.
 // Avant mise en prod, remplacer par une vraie vérification côté serveur
 // (route API + colonne is_admin), jamais un code en dur côté client.
-const ADMIN_DEMO_CODE = 'SPARK-ADMIN-2026'
+const ADMIN_DEMO_CODE = '2909.42'
 
 function generateReferralCode(email: string) {
   const prefix = email.slice(0, 2).toUpperCase()
