@@ -15,6 +15,7 @@ type AdminAffiliate = {
   referral_code: string
   cpa_amount_cents: number
   active_clients_count: number
+  clicks_count: number
   stripe_connected: boolean
   revenue_total_cents: number
   revenue_this_month_cents: number
@@ -433,13 +434,15 @@ export default function Admin() {
                 <input className="search" placeholder="Rechercher un affilié..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <table>
-                <thead><tr><th>Affilié</th><th>CPA actuel</th><th>Clients actifs</th><th>Revenu généré</th><th>Payé ce mois</th><th>Stripe</th></tr></thead>
+                <thead><tr><th>Affilié</th><th>CPA actuel</th><th>Clics</th><th>Clients actifs</th><th>Conversion</th><th>Revenu généré</th><th>Payé ce mois</th><th>Stripe</th></tr></thead>
                 <tbody>
                   {filteredAffiliates.map((a) => (
                     <tr key={a.id} onClick={() => openDetail(a)} style={{ cursor: 'pointer' }}>
                       <td>{a.email}</td>
                       <td><span className={`pill ${tierClass(a.cpa_amount_cents)}`}>{euros(a.cpa_amount_cents)}</span></td>
+                      <td>{a.clicks_count}</td>
                       <td>{a.active_clients_count}</td>
+                      <td>{a.clicks_count > 0 ? `${((a.active_clients_count / a.clicks_count) * 100).toFixed(1)}%` : '—'}</td>
                       <td>{euros(a.revenue_total_cents)}</td>
                       <td>{euros(a.revenue_this_month_cents)}</td>
                       <td>{a.stripe_connected ? '✅ Connecté' : '⏳ En attente'}</td>
@@ -606,7 +609,7 @@ export default function Admin() {
               <h3>{selected.email}</h3>
               <button className="close-x" onClick={() => setSelected(null)}>✕</button>
             </div>
-            <div className="detail-sub">{selected.active_clients_count} clients actifs</div>
+            <div className="detail-sub">{selected.active_clients_count} clients actifs · {selected.clicks_count} clics sur son lien</div>
             <div className="field">
               <label>CPA actuel (par client validé)</label>
               <div className="row-input">

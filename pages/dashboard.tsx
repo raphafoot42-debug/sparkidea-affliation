@@ -19,6 +19,7 @@ type Affiliate = {
   referral_code: string
   cpa_amount_cents: number
   active_clients_count: number
+  clicks_count: number
   stripe_connected: boolean
   parent_affiliate_id: string | null
 }
@@ -223,9 +224,8 @@ export default function Dashboard() {
 
   const link = `spark-idea.com/?ref=${affiliate.referral_code}`
   const totalRevenue = payouts.reduce((sum, p) => sum + p.amount_cents, 0)
-  const thisMonth = new Date().toISOString().slice(0, 7)
-  const monthRevenue = payouts.filter((p) => p.period === thisMonth).reduce((sum, p) => sum + p.amount_cents, 0)
   const activeReferrals = referrals.filter((r) => r.status === 'active')
+  const activeSubAffiliatesCount = subAffiliates.filter((s) => s.active).length
 
   function nav(tab: string) {
     setActiveTab(tab)
@@ -291,7 +291,7 @@ export default function Dashboard() {
           <section className="page active">
             <div className="eyebrow">Programme d&apos;affiliation</div>
             <h1>Bonjour {affiliate.email.split('@')[0]} 👋</h1>
-            <div className="sub">Voici ton CPA actuel et ce que tu as déjà généré.</div>
+            <div className="sub">Voici tes performances et ton CPA actuel.</div>
 
             {stripeStatus === 'connected' && (
               <div className="card" style={{ marginBottom: 20, borderColor: '#4ade80', color: '#4ade80', fontSize: 13 }}>
@@ -309,23 +309,24 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="card" style={{ marginBottom: 20 }}>
-              <div className="card-head"><h3>Ton CPA actuel</h3></div>
-              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>
-                {euros(affiliate.cpa_amount_cents)}
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8, lineHeight: 1.6 }}>
-                Tu reçois ce montant fixe pour chaque nouveau client validé que tu apportes, une seule fois par
-                client. Ton CPA peut évoluer selon tes performances et la qualité des clients apportés — l&apos;équipe
-                Spark Idea l&apos;ajuste manuellement, pas de palier automatique.
-              </div>
+            <div className="stats">
+              <div className="stat c-cyan"><div className="label">Clics sur ton lien</div><div className="value">{affiliate.clicks_count}</div></div>
+              <div className="stat c-violet"><div className="label">Clients validés</div><div className="value accent">{referrals.length}</div></div>
+              <div className="stat c-or"><div className="label">Sous-affiliés actifs</div><div className="value">{activeSubAffiliatesCount}</div></div>
+              <div className="stat c-vert"><div className="label">Revenu total</div><div className="value">{euros(totalRevenue)}</div></div>
             </div>
 
-            <div className="stats">
-              <div className="stat c-cyan"><div className="label">Clients actifs</div><div className="value">{affiliate.active_clients_count}</div></div>
-              <div className="stat c-violet"><div className="label">CPA actuel</div><div className="value accent">{euros(affiliate.cpa_amount_cents)}</div></div>
-              <div className="stat c-or"><div className="label">Revenu ce mois</div><div className="value">{euros(monthRevenue)}</div></div>
-              <div className="stat c-vert"><div className="label">Revenu total cumulé</div><div className="value">{euros(totalRevenue)}</div></div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-head"><h3>Ton CPA actuel</h3></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>Par client validé</span>
+                <span style={{ fontSize: 24, fontWeight: 600, color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>{euros(affiliate.cpa_amount_cents)}</span>
+              </div>
+              {affiliate.clicks_count > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+                  Taux de conversion : <b style={{ color: 'var(--text)' }}>{((referrals.length / affiliate.clicks_count) * 100).toFixed(1)}%</b> de tes clics deviennent clients.
+                </div>
+              )}
             </div>
 
             <div className="card">
@@ -335,6 +336,18 @@ export default function Dashboard() {
                 <button className="copy" onClick={() => copyLink(link)}>{copiedLink === link ? 'Copié !' : 'Copier'}</button>
               </div>
             </div>
+
+            {referrals.length > 0 && (
+              <div className="card" style={{ marginTop: 20 }}>
+                <h3 style={{ marginBottom: 14 }}>Derniers clients</h3>
+                {referrals.slice(0, 5).map((r) => (
+                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                    <span>{maskEmail(r.customer_email)}</span>
+                    <span style={{ color: 'var(--cyan)', fontWeight: 500 }}>+{euros(r.cpa_applied_cents)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

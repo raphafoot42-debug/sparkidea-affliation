@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { data: affiliates, error } = await admin
     .from('affiliates')
-    .select('id, email, referral_code, cpa_amount_cents, active_clients_count, stripe_connected, created_at')
+    .select('id, email, referral_code, cpa_amount_cents, active_clients_count, clicks_count, stripe_connected, created_at')
     .order('active_clients_count', { ascending: false })
 
   if (error) {

@@ -62,3 +62,19 @@ alter table commission_payouts
 -- nouveau webhook ni par lib/commission.ts (qui est supprimé).
 -- Si tu veux la supprimer complètement plus tard :
 --   drop table if exists commission_tiers;
+
+-- ------------------------------------------------------------
+-- 5. Tracking des clics sur le lien d'affiliation
+-- ------------------------------------------------------------
+alter table affiliates
+  add column if not exists clicks_count integer not null default 0;
+
+comment on column affiliates.clicks_count is
+  'Nombre de fois où le lien de cet affilié a été ouvert (avant conversion en client). Incrémenté via /api/track-click, appelé depuis la page d''accueil du site principal Spark Idea quand ?ref= est présent dans l''URL.';
+
+create or replace function increment_clicks(affiliate_id uuid)
+returns void as $$
+  update affiliates
+  set clicks_count = clicks_count + 1
+  where id = affiliate_id;
+$$ language sql;
