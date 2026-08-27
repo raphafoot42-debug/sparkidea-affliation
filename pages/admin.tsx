@@ -13,8 +13,7 @@ type AdminAffiliate = {
   id: string
   email: string
   referral_code: string
-  commission_rate: number
-  rate_locked: boolean
+  cpa_amount_cents: number
   active_clients_count: number
   stripe_connected: boolean
   revenue_total_cents: number
@@ -34,11 +33,14 @@ type AdminMessage = { id: string; affiliate_id: string; sender: string; body: st
 function euros(cents: number) {
   return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
-function tierClass(rate: number) {
-  if (rate >= 50) return 't4'
-  if (rate >= 30) return 't3'
-  if (rate >= 20) return 't2'
-  return 't1'
+// Coloration purement visuelle du pill CPA dans le tableau — n'a plus
+// aucun effet sur le montant réellement versé (ça, c'est cpa_amount_cents,
+// modifié à la main par le manager, jamais recalculé automatiquement).
+function tierClass(cpaCents: number) {
+  if (cpaCents >= 10000) return 't4'  // 100 € et plus
+  if (cpaCents >= 5000) return 't3'   // 50 à 99 €
+  if (cpaCents >= 3000) return 't2'   // 30 à 49 €
+  return 't1'                          // en dessous
 }
 
 // Empêche Next.js de pré-générer cette page en statique au moment du build.
@@ -74,8 +76,7 @@ export default function Admin() {
   const [affiliates, setAffiliates] = useState<AdminAffiliate[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AdminAffiliate | null>(null)
-  const [detailRate, setDetailRate] = useState(10)
-  const [detailLocked, setDetailLocked] = useState(false)
+  const [detailCpaEuros, setDetailCpaEuros] = useState(15)
   const [savingDetail, setSavingDetail] = useState(false)
 
   const [packs, setPacks] = useState<AdminPack[]>([])
@@ -138,22 +139,22 @@ export default function Admin() {
 
   function openDetail(a: AdminAffiliate) {
     setSelected(a)
-    setDetailRate(a.commission_rate)
-    setDetailLocked(a.rate_locked)
+    setDetailCpaEuros(a.cpa_amount_cents / 100)
   }
 
   async function saveDetail() {
     if (!selected) return
     setSavingDetail(true)
-    const res = await fetch('/api/affiliate-rate', {
+    const res = await fetch('/api/affiliate-cpa', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: selected.id, rate: detailRate, locked: detailLocked }),
+      body: JSON.stringify({ id: selected.id, cpaAmountEuros: detailCpaEuros }),
     })
     setSavingDetail(false)
     if (res.ok) {
+      const cpaAmountCents = Math.round(detailCpaEuros * 100)
       setAffiliates((prev) =>
-        prev.map((a) => (a.id === selected.id ? { ...a, commission_rate: detailRate, rate_locked: detailLocked } : a))
+        prev.map((a) => (a.id === selected.id ? { ...a, cpa_amount_cents: cpaAmountCents } : a))
       )
       setSelected(null)
     }
@@ -432,12 +433,12 @@ export default function Admin() {
                 <input className="search" placeholder="Rechercher un affilié..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <table>
-                <thead><tr><th>Affilié</th><th>Palier</th><th>Clients actifs</th><th>Revenu généré</th><th>Commission ce mois</th><th>Stripe</th></tr></thead>
+                <thead><tr><th>Affilié</th><th>CPA actuel</th><th>Clients actifs</th><th>Revenu généré</th><th>Payé ce mois</th><th>Stripe</th></tr></thead>
                 <tbody>
                   {filteredAffiliates.map((a) => (
                     <tr key={a.id} onClick={() => openDetail(a)} style={{ cursor: 'pointer' }}>
                       <td>{a.email}</td>
-                      <td><span className={`pill ${tierClass(a.commission_rate)}`}>{a.commission_rate}%</span></td>
+                      <td><span className={`pill ${tierClass(a.cpa_amount_cents)}`}>{euros(a.cpa_amount_cents)}</span></td>
                       <td>{a.active_clients_count}</td>
                       <td>{euros(a.revenue_total_cents)}</td>
                       <td>{euros(a.revenue_this_month_cents)}</td>
@@ -607,16 +608,15 @@ export default function Admin() {
             </div>
             <div className="detail-sub">{selected.active_clients_count} clients actifs</div>
             <div className="field">
-              <label>Commission actuelle</label>
+              <label>CPA actuel (par client validé)</label>
               <div className="row-input">
-                <input type="number" value={detailRate} min={0} max={100} onChange={(e) => setDetailRate(Number(e.target.value))} /> <span className="static">%</span>
+                <input type="number" value={detailCpaEuros} min={0} step={1} onChange={(e) => setDetailCpaEuros(Number(e.target.value))} /> <span className="static">€</span>
               </div>
-            </div>
-            <div className="field">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: 12.5, color: 'var(--text)' }}>
-                <input type="checkbox" checked={detailLocked} onChange={(e) => setDetailLocked(e.target.checked)} style={{ width: 14, height: 14 }} />
-                🔒 Verrouiller ce taux (ignore la progression automatique des paliers)
-              </label>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
+                Ce montant s&apos;applique uniquement aux <b style={{ color: 'var(--text)' }}>futurs</b> clients de cet
+                affilié. Les clients déjà ramenés gardent le CPA qui leur a été appliqué au moment de leur
+                validation — rien n&apos;est recalculé rétroactivement.
+              </div>
             </div>
             <div className="field">
               <label>Statut du compte Stripe</label>

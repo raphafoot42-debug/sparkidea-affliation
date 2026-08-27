@@ -17,8 +17,7 @@ type Affiliate = {
   id: string
   email: string
   referral_code: string
-  commission_rate: number
-  rate_locked: boolean
+  cpa_amount_cents: number
   active_clients_count: number
   stripe_connected: boolean
   parent_affiliate_id: string | null
@@ -28,7 +27,7 @@ type Referral = {
   customer_email: string
   plan: string
   status: string
-  commission_rate_at_signup: number
+  cpa_applied_cents: number
   referred_via_code: string
   created_at: string
 }
@@ -228,18 +227,6 @@ export default function Dashboard() {
   const monthRevenue = payouts.filter((p) => p.period === thisMonth).reduce((sum, p) => sum + p.amount_cents, 0)
   const activeReferrals = referrals.filter((r) => r.status === 'active')
 
-  const tiers = [
-    { rate: 10, min: 0 },
-    { rate: 20, min: 20 },
-    { rate: 30, min: 50 },
-    { rate: 50, min: 200 },
-  ]
-  const currentTierIndex = tiers.reduce((idx, t, i) => (affiliate.active_clients_count >= t.min ? i : idx), 0)
-  const nextTier = tiers[currentTierIndex + 1]
-  const progressPct = nextTier
-    ? Math.min(100, (affiliate.active_clients_count / nextTier.min) * 100)
-    : 100
-
   function nav(tab: string) {
     setActiveTab(tab)
     setDrawerOpen(false)
@@ -304,7 +291,7 @@ export default function Dashboard() {
           <section className="page active">
             <div className="eyebrow">Programme d&apos;affiliation</div>
             <h1>Bonjour {affiliate.email.split('@')[0]} 👋</h1>
-            <div className="sub">Voici où en est ton palier ce mois-ci.</div>
+            <div className="sub">Voici ton CPA actuel et ce que tu as déjà généré.</div>
 
             {stripeStatus === 'connected' && (
               <div className="card" style={{ marginBottom: 20, borderColor: '#4ade80', color: '#4ade80', fontSize: 13 }}>
@@ -322,42 +309,21 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="ladder-card">
-              <div className="ladder-head">
-                <h2>Ta progression</h2>
-                <div className="next">
-                  {nextTier
-                    ? <>Plus que <b>{Math.max(0, nextTier.min - affiliate.active_clients_count)} clients</b> avant le palier suivant ({nextTier.rate}%)</>
-                    : 'Palier maximum atteint 🎉'}
-                </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-head"><h3>Ton CPA actuel</h3></div>
+              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--cyan)', fontFamily: "'JetBrains Mono',monospace" }}>
+                {euros(affiliate.cpa_amount_cents)}
               </div>
-              <div className="ladder-track"><div className="ladder-fill" style={{ width: `${progressPct}%` }}></div></div>
-              <div className="ladder-nodes">
-                {tiers.map((t) => (
-                  <div className="node" key={t.rate}>
-                    <div className={`dot${affiliate.active_clients_count >= t.min ? (t.rate === tiers[currentTierIndex].rate ? ' current' : ' done') : ''}`}></div>
-                    <div className="node-label"><b>{t.rate}%</b>{t.min} client{t.min > 1 ? 's' : ''}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="badges-row">
-                {[
-                  ['b-bronze', 'Bronze', 10],
-                  ['b-argent', 'Argent', 20],
-                  ['b-or', 'Or', 30],
-                  ['b-violet', 'Violet', 50],
-                ].map(([cls, name, rate]) => (
-                  <div className={`badge${affiliate.commission_rate < Number(rate) ? ' locked' : ''}`} key={name as string}>
-                    <div className={`badge-icon ${cls}`}>★</div>
-                    <div className="badge-name">{name}<br />{rate}%</div>
-                  </div>
-                ))}
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8, lineHeight: 1.6 }}>
+                Tu reçois ce montant fixe pour chaque nouveau client validé que tu apportes, une seule fois par
+                client. Ton CPA peut évoluer selon tes performances et la qualité des clients apportés — l&apos;équipe
+                Spark Idea l&apos;ajuste manuellement, pas de palier automatique.
               </div>
             </div>
 
             <div className="stats">
               <div className="stat c-cyan"><div className="label">Clients actifs</div><div className="value">{affiliate.active_clients_count}</div></div>
-              <div className="stat c-violet"><div className="label">Taux actuel</div><div className="value accent">{affiliate.commission_rate}%</div></div>
+              <div className="stat c-violet"><div className="label">CPA actuel</div><div className="value accent">{euros(affiliate.cpa_amount_cents)}</div></div>
               <div className="stat c-or"><div className="label">Revenu ce mois</div><div className="value">{euros(monthRevenue)}</div></div>
               <div className="stat c-vert"><div className="label">Revenu total cumulé</div><div className="value">{euros(totalRevenue)}</div></div>
             </div>
@@ -386,7 +352,7 @@ export default function Dashboard() {
               </div>
               <div style={{ marginTop: 16, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
                 {affiliate.stripe_connected
-                  ? 'Stripe connecté — tes commissions sont versées automatiquement chaque mois, tant que tes filleuls restent abonnés.'
+                  ? `Stripe connecté — ton CPA de ${euros(affiliate.cpa_amount_cents)} est versé automatiquement dès qu'un client que tu ramènes est validé.`
                   : 'Connecte ton compte Stripe dans Paramètres pour pouvoir être payé.'}
               </div>
             </div>
@@ -420,7 +386,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <table>
-                  <thead><tr><th>Client</th><th>Forfait</th><th>Lien utilisé</th><th>Depuis</th><th>Statut</th><th>Ta commission</th></tr></thead>
+                  <thead><tr><th>Client</th><th>Forfait</th><th>Lien utilisé</th><th>Depuis</th><th>Statut</th><th>CPA reçu</th></tr></thead>
                   <tbody>
                     {referrals.map((r) => (
                       <tr key={r.id}>
@@ -429,7 +395,7 @@ export default function Dashboard() {
                         <td className="link-tag">?ref={r.referred_via_code}</td>
                         <td>{new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
                         <td><span className={`pill ${r.status === 'active' ? 't2 active-dot' : 't1'}`}>{r.status === 'active' ? 'Actif' : 'Résilié'}</span></td>
-                        <td>{r.status === 'active' ? `${((Number(r.plan) || 0) * r.commission_rate_at_signup / 100).toFixed(2)} €/mois` : '—'}</td>
+                        <td>{euros(r.cpa_applied_cents)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -460,10 +426,11 @@ export default function Dashboard() {
                   <>
                     Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
                     sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
-                    connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, sur son propre palier
-                    (10% → 20% → 30% → 50% selon ses clients à lui). Tant qu&apos;il ne l&apos;a pas fait, c&apos;est
-                    à toi de le payer toi-même. Une fois activé, il peut lui aussi créer des sous-affiliés — mais
-                    ceux-là restent toujours payés à la main par lui, jamais par Spark Idea.
+                    connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, avec son propre CPA fixe
+                    par client validé (15€ pour commencer, ajustable ensuite par l&apos;équipe selon ses
+                    performances — indépendant du tien). Tant qu&apos;il ne l&apos;a pas fait, c&apos;est à toi de le
+                    payer toi-même. Une fois activé, il peut lui aussi créer des sous-affiliés — mais ceux-là
+                    restent toujours payés à la main par lui, jamais par Spark Idea.
                   </>
                 )}
               </div>
@@ -615,23 +582,27 @@ export default function Dashboard() {
             <div className="card" style={{ marginBottom: 20 }}>
               <div className="card-head"><h3>Comment toi, tu gagnes de l&apos;argent avec ça</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
-                Chaque personne qui s&apos;abonne via ton lien te rapporte une commission <b style={{ color: 'var(--text)' }}>chaque mois, tant qu&apos;elle reste abonnée</b> —
-                ce n&apos;est jamais un paiement unique. Un client qui reste 6 mois te paie 6 fois.
+                Chaque nouveau client que tu apportes te rapporte un <b style={{ color: 'var(--text)' }}>montant fixe, versé
+                une seule fois</b> dès que ce client est validé — quel que soit le forfait qu&apos;il choisit
+                (Starter, Pro ou Élite, ça ne change rien à ton gain).
                 <br /><br />
-                Ton taux augmente automatiquement avec le nombre de clients actifs que tu as apportés :
-                <ul style={{ margin: '10px 0', paddingLeft: 18 }}>
-                  <li style={{ marginBottom: 6 }}>1 à 20 clients → <b style={{ color: 'var(--text)' }}>10%</b></li>
-                  <li style={{ marginBottom: 6 }}>21 à 50 clients → <b style={{ color: 'var(--text)' }}>20%</b></li>
-                  <li style={{ marginBottom: 6 }}>51 à 200 clients → <b style={{ color: 'var(--text)' }}>30%</b></li>
-                  <li>201 clients et plus → <b style={{ color: 'var(--text)' }}>50%</b></li>
-                </ul>
-                Concrètement : si tu ramènes 20 clients sur le forfait Starter (19€), tu touches 10% de chacun,
-                soit environ <b style={{ color: 'var(--text)' }}>38€/mois</b> — et ça continue tant qu&apos;ils restent
-                abonnés. Passé 20 clients, ton taux double automatiquement, sans rien à demander.
+                Tu commences avec un <b style={{ color: 'var(--text)' }}>CPA de 15€ par client</b>. Ce montant n&apos;est
+                pas figé : plus tu apportes de clients de qualité qui restent actifs, plus l&apos;équipe Spark Idea
+                peut l&apos;augmenter manuellement — il n&apos;y a pas de plafond fixé à l&apos;avance. Certains
+                affiliés passent à 20€, 30€, 50€, 80€, 100€ ou plus selon leurs résultats.
+                <br /><br />
+                Concrètement : si tu ramènes 20 clients avec un CPA à 15€, tu touches <b style={{ color: 'var(--text)' }}>300€</b>,
+                versés au fur et à mesure que chaque client est validé — pas d&apos;un coup, mais garantis, sans
+                dépendre de la durée pendant laquelle ce client reste abonné.
+                <br /><br />
+                Important à savoir : si ton CPA change (par exemple de 15€ à 30€), ça ne s&apos;applique qu&apos;aux
+                <b style={{ color: 'var(--text)' }}> nouveaux</b> clients que tu apportes ensuite. Les clients déjà
+                validés avant le changement gardent le montant qui leur était associé au moment de leur validation.
                 <br /><br />
                 Tu as aussi <b style={{ color: 'var(--text)' }}>deux liens différents</b> : un lien client (pour vendre
-                directement) et un lien pour recruter d&apos;autres sous-affiliés, qui vendent sous toi. Plus ton
-                équipe grandit, plus ton revenu grandit avec elle — sans que tu aies à vendre toi-même à chaque fois.
+                directement) et un lien pour recruter d&apos;autres sous-affiliés, qui vendent sous toi avec leur
+                propre CPA. Plus ton équipe grandit, plus ton volume de clients apportés grandit avec elle — sans que
+                tu aies à vendre toi-même à chaque fois.
               </div>
             </div>
 
@@ -726,8 +697,8 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="settings-row">
-                <div><div className="label">Taux de commission actuel</div><div className="desc">Basé sur ton palier — évolue automatiquement{affiliate.rate_locked ? ' (verrouillé par l&apos;admin)' : ''}</div></div>
-                <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>{affiliate.commission_rate}%</span>
+                <div><div className="label">Ton CPA actuel</div><div className="desc">Montant reçu par client validé — ajusté manuellement par l&apos;équipe Spark Idea</div></div>
+                <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>{euros(affiliate.cpa_amount_cents)}</span>
               </div>
               <div className="settings-row">
                 <div><div className="label">Ton lien</div><div className="desc">{link}</div></div>

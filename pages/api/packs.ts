@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!user) {
     return res.status(401).json({ error: 'Non authentifié' })
   }
-  // TODO: vérifier is_admin, comme sur la route affiliate-rate
+  // TODO: vérifier is_admin, comme sur la route affiliate-cpa
 
   const { title, description, rewardEuros, targetCount, targetPlan, endsAt } = req.body
 

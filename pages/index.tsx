@@ -457,10 +457,10 @@ export default function HomePage() {
 
       <header className="hero wrap">
         <span className="badge">Programme d&apos;affiliation</span>
-        <h1>Jour après jour, <span className="grad">tu gagnes</span></h1>
+        <h1>Chaque client, <span className="grad">un gain garanti</span></h1>
         <p>
-          Ton filleul reste sur Spark Idea → sa commission continue de tomber.
-          Rien ne redescend, ça ne fait qu&apos;augmenter.
+          Commence avec 15 € de CPA par client validé. Plus tu ramènes de clients de qualité,
+          plus ton CPA peut augmenter — sans plafond fixé à l&apos;avance.
         </p>
         <div className="hero-ctas">
           <Link href="/signup" className="btn btn-primary">Devenir affilié</Link>
@@ -471,17 +471,17 @@ export default function HomePage() {
       </header>
 
       <section className="section wrap">
-        <span className="section-eyebrow">Revenu récurrent</span>
-        <h2 className="section-title">Un client, ça continue de rapporter</h2>
-        <p className="section-sub">Ton filleul reste abonné → tu es payé à nouveau. Ce n&apos;est jamais une commission unique.</p>
+        <span className="section-eyebrow">Paiement garanti</span>
+        <h2 className="section-title">Un client validé, un gain acquis</h2>
+        <p className="section-sub">Ton CPA est versé une seule fois par client, dès sa validation — pas besoin d&apos;attendre, pas de reprise possible ensuite.</p>
         <div className="recur-strip">
-          <div className="recur-item"><div className="recur-day">Jour 1</div><div className="recur-amt">120 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 1</div><div className="recur-amt">15 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Jour 2</div><div className="recur-amt">245 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 2</div><div className="recur-amt">30 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Jour 3</div><div className="recur-amt">380 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 3</div><div className="recur-amt">45 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Jour 4</div><div className="recur-amt">510 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 4</div><div className="recur-amt">60 €</div></div>
         </div>
       </section>
 
@@ -493,7 +493,7 @@ export default function HomePage() {
           <div className="link-card">
             <span className="link-tag client">Lien client</span>
             <h3>Pour vendre directement</h3>
-            <p>Tu le donnes à une personne qui s&apos;abonne. Tu touches ta commission sur son abonnement, chaque mois.</p>
+            <p>Tu le donnes à une personne qui s&apos;abonne. Tu touches ton CPA fixe dès que son compte est validé, une seule fois.</p>
           </div>
           <div className="link-card">
             <span className="link-tag affilie">Lien affilié</span>
@@ -504,34 +504,34 @@ export default function HomePage() {
       </section>
 
       <section className="section wrap">
-        <span className="section-eyebrow">Barème progressif</span>
-        <h2 className="section-title">Ta commission augmente avec toi</h2>
-        <p className="section-sub">Le suivi est automatique via Stripe : dès qu&apos;un palier est atteint, ton taux change tout seul, sans rien à demander.</p>
+        <span className="section-eyebrow">CPA évolutif</span>
+        <h2 className="section-title">Ton CPA augmente avec tes résultats</h2>
+        <p className="section-sub">Plus tu apportes de chiffre d&apos;affaires et de clients actifs et de qualité, plus ton CPA peut augmenter — décidé par l&apos;équipe Spark Idea selon tes performances, pas par un palier automatique.</p>
         <div className="tier-box">
           <div className="tier-row head">
-            <span>Clients amenés</span>
-            <span>Commission</span>
+            <span>Ton profil</span>
+            <span>CPA possible</span>
             <span>Ce que ça veut dire</span>
           </div>
           <div className="tier-row">
-            <span className="tier-range">1 à 20 clients</span>
-            <span className="tier-rate">10%</span>
-            <span className="tier-note">Ton taux de départ, dès ton premier client.</span>
+            <span className="tier-range">Tout nouvel affilié</span>
+            <span className="tier-rate">15 €</span>
+            <span className="tier-note">Ton CPA de départ, dès ton premier client, quel que soit le forfait choisi.</span>
           </div>
           <div className="tier-row">
-            <span className="tier-range">21 à 50 clients</span>
-            <span className="tier-rate">20%</span>
-            <span className="tier-note">Passé le 20ᵉ client, ton taux double automatiquement.</span>
+            <span className="tier-range">Bons résultats</span>
+            <span className="tier-rate">20 à 50 €</span>
+            <span className="tier-note">Clients qui restent actifs, volume régulier — l&apos;équipe peut ajuster ton CPA à la hausse.</span>
           </div>
           <div className="tier-row">
-            <span className="tier-range">51 à 200 clients</span>
-            <span className="tier-rate">30%</span>
-            <span className="tier-note">Passé le 50ᵉ client, ta commission monte encore.</span>
+            <span className="tier-range">Très bons partenaires</span>
+            <span className="tier-rate">80 à 150 €</span>
+            <span className="tier-note">Chiffre d&apos;affaires important généré, clients de qualité qui restent abonnés durablement.</span>
           </div>
           <div className="tier-row">
-            <span className="tier-range">201 clients et plus</span>
-            <span className="tier-rate">50%</span>
-            <span className="tier-note">Au-delà de 200 clients, tu touches la moitié du bénéfice généré.</span>
+            <span className="tier-range">Top partenaires</span>
+            <span className="tier-rate">150 € et plus</span>
+            <span className="tier-note">Pas de plafond fixé à l&apos;avance — négocié individuellement avec l&apos;équipe.</span>
           </div>
         </div>
       </section>
@@ -545,21 +545,21 @@ export default function HomePage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6c8bff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
             <h3>Paiements via Stripe</h3>
-            <p>Le suivi des ventes et des paliers est entièrement automatisé, aucune erreur possible.</p>
+            <p>Le suivi des clients et des virements est entièrement automatisé, aucune erreur possible.</p>
           </div>
           <div className="trust-item">
             <div className="trust-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ee88e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </div>
-            <h3>Taux mis à jour seul</h3>
-            <p>Dès que tu changes de palier, ton nouveau taux s&apos;applique immédiatement.</p>
+            <h3>CPA versé immédiatement</h3>
+            <p>Dès qu&apos;un client est validé, ton CPA part sur ton compte — pas besoin d&apos;attendre la fin du mois.</p>
           </div>
           <div className="trust-item">
             <div className="trust-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6c8bff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             </div>
-            <h3>Commission récurrente</h3>
-            <p>Tant que ton client reste abonné, tu continues d&apos;être payé chaque mois — ton solde ne baisse jamais.</p>
+            <h3>Rien n&apos;est repris</h3>
+            <p>Une fois ton CPA versé pour un client, il t&apos;appartient — même si ce client se désabonne ensuite.</p>
           </div>
         </div>
       </section>
@@ -572,16 +572,20 @@ export default function HomePage() {
           <p>Oui, l&apos;inscription est gratuite et sans engagement.</p>
         </div>
         <div className="faq-item">
-          <h3>Comment mon taux de commission change-t-il ?</h3>
-          <p>Automatiquement, dès que tu atteins un nouveau palier de clients. Tu n&apos;as rien à demander ni à configurer.</p>
+          <h3>Comment mon CPA change-t-il ?</h3>
+          <p>Ce n&apos;est pas automatique : l&apos;équipe Spark Idea l&apos;ajuste manuellement en fonction du nombre de clients que tu apportes, de leur qualité et du chiffre d&apos;affaires généré. Il n&apos;y a pas de palier ni de seuil garanti.</p>
         </div>
         <div className="faq-item">
           <h3>Quelle est la différence entre les deux liens ?</h3>
-          <p>Le lien client sert à vendre directement l&apos;abonnement. Le lien affilié sert à recruter d&apos;autres affiliés qui vendront sous toi.</p>
+          <p>Le lien client sert à vendre directement l&apos;abonnement. Le lien affilié sert à recruter d&apos;autres affiliés qui vendront sous toi, avec leur propre CPA.</p>
         </div>
         <div className="faq-item">
-          <h3>Est-ce que ma commission peut baisser ?</h3>
-          <p>Non. Tant qu&apos;un client reste abonné, sa commission continue de t&apos;être versée chaque mois — ton solde cumulé ne fait qu&apos;augmenter.</p>
+          <h3>Est-ce que mon CPA peut baisser ?</h3>
+          <p>Un changement de CPA ne s&apos;applique qu&apos;aux futurs clients — les clients déjà validés te gardent le montant qui leur était associé au moment de leur validation, quoi qu&apos;il arrive.</p>
+        </div>
+        <div className="faq-item">
+          <h3>Le CPA dépend-il du forfait choisi par le client ?</h3>
+          <p>Non. Que ton client choisisse Starter, Pro ou Élite, tu touches le même CPA fixe — celui qui est actuellement le tien.</p>
         </div>
       </section>
 
