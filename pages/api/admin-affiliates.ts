@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
  
 // ⚠️ TODO avant mise en prod : vérifier que l'appelant est bien admin 
-// (même limitation que sur affiliate-rate.ts et packs.ts — pas encore de
+// (même limitation que sur affiliate-cpa.ts et packs.ts — pas encore de
 // colonne is_admin dans le projet). Pour l'instant, protégé uniquement par
 // le fait que l'URL /admin n'est accessible qu'via le code d'accès admin
 // (voir pages/signup.tsx), ce qui n'est pas une vraie sécurité côté serveur.
@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { data: affiliates, error } = await admin
     .from('affiliates')
-    .select('id, email, referral_code, commission_rate, rate_locked, active_clients_count, stripe_connected, created_at')
+    .select('id, email, referral_code, cpa_amount_cents, active_clients_count, stripe_connected, created_at')
     .order('active_clients_count', { ascending: false })
 
   if (error) {
