@@ -5,7 +5,7 @@ import { createAdminClient } from './supabase-admin'
  * Règles (validées avec Raphaël) :
  *  - Le taux suit automatiquement les paliers selon active_clients_count
  *  - SAUF si rate_locked = true → l'admin a forcé un taux manuellement, 
- *    il reste figé tant qu'il ne le change pas lui-même
+ *    il reste figé tant qu'il ne le change pas lui-même 
  *  - Le changement de palier ne s'applique qu'aux NOUVEAUX clients à partir
  *    de ce moment (le taux appliqué à un filleul existant est figé dans
  *    referrals.commission_rate_at_signup au moment de sa création)
