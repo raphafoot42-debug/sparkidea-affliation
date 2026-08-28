@@ -1,18 +1,22 @@
-import type { NextApiRequest, NextApiResponse } from 'next' 
-import { createClient } from '@/lib/supabase-server'
+import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
 
+// ⚠️ SÉCURITÉ — pas de vraie vérification d'identité pour l'instant.
+// L'admin se connecte via un simple code tapé sur /signup, stocké dans
+// sessionStorage côté navigateur (voir signup.tsx / admin.tsx) — ce n'est
+// PAS une session Supabase Auth. Du coup, on ne peut pas utiliser
+// supabase.auth.getUser() ici (ça a été tenté, mais échouait toujours car
+// aucune session réelle n'existe jamais pour l'admin — c'est ce qui
+// empêchait "Publier le pack" de fonctionner). Cette route est donc, pour
+// l'instant, appelable par n'importe qui qui en devine l'URL, sans
+// protection réelle. À corriger avant toute mise en ligne publique en
+// ajoutant une vraie vérification (ex: colonne is_admin + vraie session
+// Supabase pour l'admin, ou au minimum une clé secrète partagée envoyée
+// en en-tête).
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' })
   }
-
-  const supabase = createClient(req, res) 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return res.status(401).json({ error: 'Non authentifié' })
-  }
-  // TODO: vérifier is_admin, comme sur la route affiliate-cpa
 
   const { title, description, rewardEuros, targetCount, targetPlan, endsAt } = req.body
 
@@ -30,7 +34,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       target_count: targetCount ?? null,
       target_plan: targetPlan ?? null,
       ends_at: endsAt ?? null,
-      created_by: user.id,
     })
     .select()
     .single()

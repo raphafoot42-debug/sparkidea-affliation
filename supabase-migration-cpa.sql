@@ -9,8 +9,21 @@
 -- 1. Table affiliates : le CPA remplace le taux de commission
 -- ------------------------------------------------------------
 alter table affiliates
-  add column if not exists cpa_amount_cents integer not null default 1500;
-  -- 1500 = 15,00 € — CPA de départ pour tout nouveau sous-affilié.
+  add column if not exists cpa_amount_cents integer not null default 1000;
+  -- 1000 = 10,00 € — CPA de départ pour tout nouveau sous-affilié.
+
+-- ⚠️ Si tu as DÉJÀ exécuté cette migration une première fois (colonne déjà
+-- créée avec l'ancien défaut à 1500 = 15€), la ligne "add column if not
+-- exists" ci-dessus ne changera rien : elle ne touche que les colonnes qui
+-- n'existent pas encore. Exécute alors séparément ces deux lignes pour
+-- mettre à jour le défaut ET les comptes déjà créés qui sont encore à leur
+-- valeur de départ (15€) sans avoir été ajustés manuellement depuis :
+--   alter table affiliates alter column cpa_amount_cents set default 1000;
+--   update affiliates set cpa_amount_cents = 1000 where cpa_amount_cents = 1500;
+-- (la deuxième ligne est optionnelle — si tu as déjà des affiliés en prod
+-- avec des clients validés à 15€, ne la lance pas : ça ne changerait que
+-- leur CPA actuel pour les FUTURS clients, mais autant le faire à la main
+-- affilié par affilié si certains doivent rester à 15€.)
 
 comment on column affiliates.cpa_amount_cents is
   'Montant fixe en centimes versé une seule fois par client validé. Modifiable manuellement par le manager depuis /admin. Ne change jamais automatiquement.';

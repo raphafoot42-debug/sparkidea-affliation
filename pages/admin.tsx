@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 const pageTitles: Record<string, string> = {
   'ad-overview': "Vue d'ensemble",
   'ad-affilies': 'Affiliés',
+  'ad-sub-affilies': 'Sous-affiliés',
   'ad-packs': 'Packs',
   'ad-messages': 'Messages',
   'ad-parametres': 'Paramètres',
@@ -30,6 +31,17 @@ type AdminPack = {
   active: boolean
 }
 type AdminMessage = { id: string; affiliate_id: string; sender: string; body: string; created_at: string }
+type AdminSubAffiliate = {
+  id: string
+  code: string
+  name: string | null
+  active: boolean
+  clients_count: number
+  revenue_generated_cents: number
+  linked_affiliate_id: string | null
+  affiliate_id: string
+  parent_email: string
+}
 
 function euros(cents: number) {
   return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
@@ -77,7 +89,7 @@ export default function Admin() {
   const [affiliates, setAffiliates] = useState<AdminAffiliate[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AdminAffiliate | null>(null)
-  const [detailCpaEuros, setDetailCpaEuros] = useState(15)
+  const [detailCpaEuros, setDetailCpaEuros] = useState(10)
   const [savingDetail, setSavingDetail] = useState(false)
 
   const [packs, setPacks] = useState<AdminPack[]>([])
@@ -85,6 +97,9 @@ export default function Admin() {
   const [packTitle, setPackTitle] = useState('')
   const [packDesc, setPackDesc] = useState('')
   const [packReward, setPackReward] = useState('')
+
+  const [subAffiliates, setSubAffiliates] = useState<AdminSubAffiliate[]>([])
+  const [subSearch, setSubSearch] = useState('')
 
   const [messages, setMessages] = useState<AdminMessage[]>([])
   const [msgAffiliates, setMsgAffiliates] = useState<{ id: string; email: string }[]>([])
@@ -117,16 +132,18 @@ export default function Admin() {
   useEffect(() => {
     if (checkingAccess) return
     async function load() {
-      const [affRes, packRes, msgRes] = await Promise.all([
+      const [affRes, packRes, msgRes, subRes] = await Promise.all([
         fetch('/api/admin-affiliates').then((r) => r.json()),
         fetch('/api/admin-packs').then((r) => r.json()),
         fetch('/api/admin-messages').then((r) => r.json()),
+        fetch('/api/admin-sub-affiliates').then((r) => r.json()),
       ])
       setAffiliates(affRes.affiliates ?? [])
       setPacks(packRes.packs ?? [])
       setMessages(msgRes.messages ?? [])
       setMsgAffiliates(msgRes.affiliates ?? [])
       if (msgRes.affiliates?.length) setSelectedConvo(msgRes.affiliates[0].id)
+      setSubAffiliates(subRes.subAffiliates ?? [])
       setLoading(false)
     }
     load()
@@ -293,6 +310,7 @@ export default function Admin() {
         {[
           ['ad-overview', '◆', "Vue d'ensemble"],
           ['ad-affilies', '☰', 'Affiliés'],
+          ['ad-sub-affilies', '🌱', 'Sous-affiliés'],
           ['ad-packs', '🎁', 'Packs'],
           ['ad-messages', '✉', 'Messages'],
           ['ad-parametres', '⚙', 'Paramètres'],
@@ -451,6 +469,57 @@ export default function Admin() {
                 </tbody>
               </table>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>Clique sur un affilié pour voir sa fiche et ajuster ses paramètres.</div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'ad-sub-affilies' && (
+          <section className="page active">
+            <div className="eyebrow">Espace admin</div>
+            <h1>Sous-affiliés</h1>
+            <div className="sub">Tous les sous-affiliés créés par tes affiliés de niveau 1, tous comptes confondus.</div>
+
+            <div className="admin-toolbar">
+              <input
+                type="text"
+                placeholder="Rechercher un code, un nom, un affilié parent..."
+                value={subSearch}
+                onChange={(e) => setSubSearch(e.target.value)}
+                style={{ flex: 1, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'Inter',sans-serif" }}
+              />
+            </div>
+
+            <div className="card">
+              {subAffiliates.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun sous-affilié pour l&apos;instant.</div>
+              ) : (
+                <table>
+                  <thead><tr><th>Code</th><th>Nom</th><th>Créé par</th><th>Statut</th><th>Compte lié</th><th>Clients apportés</th><th>Revenu généré</th></tr></thead>
+                  <tbody>
+                    {subAffiliates
+                      .filter((s) => {
+                        const q = subSearch.toLowerCase()
+                        return !q || s.code.toLowerCase().includes(q) || (s.name ?? '').toLowerCase().includes(q) || s.parent_email.toLowerCase().includes(q)
+                      })
+                      .map((s) => (
+                        <tr key={s.id}>
+                          <td className="link-tag">{s.code}</td>
+                          <td>{s.name || '—'}</td>
+                          <td>{s.parent_email}</td>
+                          <td><span className={`pill ${s.active ? 't2 active-dot' : 't1'}`}>{s.active ? 'Actif' : 'Inactif'}</span></td>
+                          <td>{s.linked_affiliate_id ? <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé</span> : <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>}</td>
+                          <td>{s.clients_count}</td>
+                          <td>{euros(s.revenue_generated_cents)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
+                &quot;Compte lié&quot; signifie que ce sous-affilié a créé son propre compte et connecté son Stripe —
+                il est alors payé directement par Spark Idea avec son propre CPA, en plus de la commission de
+                l&apos;affilié qui l&apos;a recruté.
+              </div>
             </div>
           </section>
         )}
