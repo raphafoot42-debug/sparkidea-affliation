@@ -3,7 +3,7 @@ import Head from 'next/head'
 import '../globals.css'  
  
 export default function App({ Component, pageProps }: AppProps) {
-  return (
+  return ( 
     <>
       <Head>
         <title>Spark Idea — Affiliation</title>
