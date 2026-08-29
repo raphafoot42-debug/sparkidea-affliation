@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 // ⚠️ SÉCURITÉ — pas de vraie vérification d'identité pour l'instant.
-// L'admin se connecte via un simple code tapé sur /signup, stocké dans
+// L'admin se connecte via un simple code tapé sur /signup, stocké dans 
 // sessionStorage côté navigateur (voir signup.tsx / admin.tsx) — ce n'est
 // PAS une session Supabase Auth. Cette route est donc, pour l'instant,
 // appelable par n'importe qui qui en devine l'URL, sans protection réelle.
