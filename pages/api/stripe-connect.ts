@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe' 
 
 function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL!.replace(/\/+$/, '')
+  return process.env.NEXT_PUBLIC_APP_URL!.replace(/\/+$/, '') 
 }
 
 // Crée le compte Stripe connecté de l'affilié (une seule fois, réutilisé
