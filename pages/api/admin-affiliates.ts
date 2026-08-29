@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 // (même limitation que sur affiliate-cpa.ts et packs.ts — pas encore de
 // colonne is_admin dans le projet). Pour l'instant, protégé uniquement par
 // le fait que l'URL /admin n'est accessible qu'via le code d'accès admin
-// (voir pages/signup.tsx), ce qui n'est pas une vraie sécurité côté serveur.
+// (voir pages/signup.tsx), ce qui n'est pas une vraie sécurité côté serveur. 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Méthode non autorisée' })
