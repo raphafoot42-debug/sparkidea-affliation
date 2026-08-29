@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 // ⚠️ Même limitation de sécurité que packs.ts / affiliate-cpa.ts : pas de
-// vraie vérification d'identité pour l'instant (voir ces fichiers pour le
+// vraie vérification d'identité pour l'instant (voir ces fichiers pour le 
 // détail). À corriger avant mise en ligne publique. 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const admin = createAdminClient()
