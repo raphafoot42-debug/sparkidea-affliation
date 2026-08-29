@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@/lib/supabase-server' 
 import { createAdminClient } from '@/lib/supabase-admin'
- 
+  
 // Appelé depuis la fiche détail d'un affilié, espace admin.
 // Avant : l'id de l'affilié était dans l'URL (/api/affiliates/[id]/rate).
 // Maintenant : il est envoyé dans le corps de la requête (JSON), plus simple à structurer côté fichiers.
