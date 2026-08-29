@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import { createClient } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client' 
 
 // ⚠️ Démo front-end : ce code est visible dans le JS envoyé au navigateur.
 // Avant mise en prod, remplacer par une vraie vérification côté serveur
