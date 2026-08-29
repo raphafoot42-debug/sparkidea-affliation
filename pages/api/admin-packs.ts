@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
   
-// ⚠️ TODO avant mise en prod : vérifier is_admin (voir admin-affiliates.ts)
+// ⚠️ TODO avant mise en prod : vérifier is_admin (voir admin-affiliates.ts) 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Méthode non autorisée' })
