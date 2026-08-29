@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 // Appelée depuis le site PRINCIPAL Spark Idea (spark-idea-two.vercel.app),
 // pas depuis ce projet — c'est volontairement une route publique, sans 
-// authentification, pensée pour être appelée cross-domaine.
+// authentification, pensée pour être appelée cross-domaine. 
 //
 // Pourquoi un pixel image plutôt qu'un fetch() classique : un <img src="..."/>
 // se charge cross-domaine sans jamais poser de problème CORS, alors qu'un
