@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
-
+ 
 // Appelé depuis la fiche détail d'un affilié, espace admin.
 // Route renommée : affiliate-rate.ts -> affiliate-cpa.ts (modèle CPA fixe,
 // il n'y a plus de "taux" mais un montant en euros).
