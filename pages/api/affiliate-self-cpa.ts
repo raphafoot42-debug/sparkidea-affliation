@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 
-// Contrairement à affiliate-cpa.ts (réservé à l'admin, pour les affiliés de
+// Contrairement à affiliate-cpa.ts (réservé à l'admin, pour les affiliés de 
 // niveau 1), cette route permet à un sous-affilié de modifier LUI-MÊME son 
 // propre CPA — mais jamais au-dessus de celui de son parent. Si le parent a
 // 20€, le sous-affilié peut se mettre n'importe où entre 0 et 20€, jamais plus.
