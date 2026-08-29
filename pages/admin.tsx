@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 
-const pageTitles: Record<string, string> = {
+const pageTitles: Record<string, string> = { 
   'ad-overview': "Vue d'ensemble",
   'ad-affilies': 'Affiliés',
   'ad-sub-affilies': 'Sous-affiliés',
