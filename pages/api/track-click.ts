@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 // Appelée depuis le site PRINCIPAL Spark Idea (spark-idea-two.vercel.app),
-// pas depuis ce projet — c'est volontairement une route publique, sans
+// pas depuis ce projet — c'est volontairement une route publique, sans 
 // authentification, pensée pour être appelée cross-domaine.
 //
 // Pourquoi un pixel image plutôt qu'un fetch() classique : un <img src="..."/>
