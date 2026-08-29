@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase-admin'
 
-// Stripe redirige ici une fois l'onboarding (Account Links) terminé — que ce
+// Stripe redirige ici une fois l'onboarding (Account Links) terminé — que ce 
 // soit complété ou juste laissé en cours de route, donc on revérifie
 // toujours le statut réel du compte auprès de Stripe avant de marquer
 // l'affilié comme connecté (on ne fait jamais confiance au simple fait
