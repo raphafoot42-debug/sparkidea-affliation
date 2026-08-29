@@ -51,6 +51,12 @@ type SubAffiliate = {
   revenue_generated_cents: number
   linked_affiliate_id: string | null
 }
+type Recruit = {
+  id: string
+  email: string
+  referral_code: string
+  cpa_amount_cents: number
+}
 
 function maskEmail(email: string) {
   const [name, domain] = email.split('@')
@@ -64,8 +70,6 @@ function initialsOf(email: string) {
   return email.slice(0, 2).toUpperCase()
 }
 
-// Empêche Next.js de pré-générer cette page en statique au moment du build :
-// elle dépend entièrement de la session de l'utilisateur connecté.
 export async function getServerSideProps() {
   return { props: {} }
 }
@@ -85,6 +89,7 @@ export default function Dashboard() {
   const [packs, setPacks] = useState<Pack[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [subAffiliates, setSubAffiliates] = useState<SubAffiliate[]>([])
+  const [recruits, setRecruits] = useState<Recruit[]>([])
 
   const [newSubName, setNewSubName] = useState('')
   const [newSubCode, setNewSubCode] = useState('')
@@ -95,11 +100,9 @@ export default function Dashboard() {
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
   const [theme, setThemeState] = useState<'dark' | 'light'>('dark')
 
-  const [maxCpaAmountCents, setMaxCpaAmountCents] = useState<number | null>(null)
-  const [editCpaEuros, setEditCpaEuros] = useState(10)
-  const [savingCpa, setSavingCpa] = useState(false)
-  const [cpaError, setCpaError] = useState<string | null>(null)
-  const [cpaSaved, setCpaSaved] = useState(false)
+  const [editRecruitCpa, setEditRecruitCpa] = useState<Record<string, number>>({})
+  const [savingRecruitCpa, setSavingRecruitCpa] = useState<Record<string, boolean>>({})
+  const [recruitCpaError, setRecruitCpaError] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
     const saved = (localStorage.getItem('sparkidea-theme') as 'dark' | 'light') || 'dark'
@@ -130,6 +133,7 @@ export default function Dashboard() {
         { data: pks },
         { data: msgs },
         { data: subs },
+        recruitsRes,
       ] = await Promise.all([
         supabase.from('affiliates').select('*').eq('id', user.id).single(),
         supabase.from('referrals').select('*').eq('affiliate_id', user.id).order('created_at', { ascending: false }),
@@ -137,6 +141,7 @@ export default function Dashboard() {
         supabase.from('packs').select('*').eq('active', true),
         supabase.from('messages').select('*').eq('affiliate_id', user.id).order('created_at', { ascending: true }),
         supabase.from('sub_affiliates').select('*').eq('affiliate_id', user.id).order('created_at', { ascending: false }),
+        fetch('/api/my-sub-affiliates-cpa').then((r) => r.json().catch(() => ({ recruits: [] }))),
       ])
 
       setAffiliate(aff ?? null)
@@ -146,13 +151,14 @@ export default function Dashboard() {
       setMessages(msgs ?? [])
       setSubAffiliates(subs ?? [])
 
-      if (aff) {
-        setEditCpaEuros(aff.cpa_amount_cents / 100)
-        if (aff.parent_affiliate_id) {
-          const capRes = await fetch('/api/my-cpa-cap').then((r) => r.json())
-          setMaxCpaAmountCents(capRes.maxCpaAmountCents ?? null)
-        }
-      }
+      const recList: Recruit[] = recruitsRes.recruits ?? []
+      setRecruits(recList)
+
+      const initialCpaMap: Record<string, number> = {}
+      recList.forEach((r) => {
+        initialCpaMap[r.id] = r.cpa_amount_cents / 100
+      })
+      setEditRecruitCpa(initialCpaMap)
 
       setLoading(false)
     }
@@ -160,26 +166,31 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function saveCpa() {
-    setCpaError(null)
-    setCpaSaved(false)
-    setSavingCpa(true)
-    const res = await fetch('/api/affiliate-self-cpa', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cpaAmountEuros: editCpaEuros }),
-    })
-    const body = await res.json().catch(() => ({}))
-    setSavingCpa(false)
-    if (res.ok) {
-      setAffiliate((prev) => (prev ? { ...prev, cpa_amount_cents: body.cpaAmountCents } : prev))
-      setCpaSaved(true)
-      setTimeout(() => setCpaSaved(false), 2000)
-    } else {
-      setCpaError(body.error ?? 'Une erreur est survenue.')
-      if (typeof body.maxCpaAmountCents === 'number') {
-        setMaxCpaAmountCents(body.maxCpaAmountCents)
+  async function saveRecruitCpa(recruitId: string) {
+    const amountEuros = editRecruitCpa[recruitId]
+    if (typeof amountEuros !== 'number' || amountEuros < 0) return
+
+    setSavingRecruitCpa((prev) => ({ ...prev, [recruitId]: true }))
+    setRecruitCpaError((prev) => ({ ...prev, [recruitId]: null }))
+
+    try {
+      const res = await fetch('/api/sub-affiliate-cpa', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subAffiliateId: recruitId, cpaAmountEuros: amountEuros }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setRecruits((prev) =>
+          prev.map((r) => (r.id === recruitId ? { ...r, cpa_amount_cents: body.cpaAmountCents } : r))
+        )
+      } else {
+        setRecruitCpaError((prev) => ({ ...prev, [recruitId]: body.error ?? 'Erreur lors de la mise à jour.' }))
       }
+    } catch {
+      setRecruitCpaError((prev) => ({ ...prev, [recruitId]: 'Erreur réseau.' }))
+    } finally {
+      setSavingRecruitCpa((prev) => ({ ...prev, [recruitId]: false }))
     }
   }
 
@@ -226,13 +237,10 @@ export default function Dashboard() {
 
   async function deleteSubAffiliate(sub: SubAffiliate) {
     if (confirmDeleteSubId !== sub.id) {
-      // Premier clic : on demande confirmation dans la page, pas de popup
-      // native (peu fiable selon navigateur/webview).
       setConfirmDeleteSubId(sub.id)
       setDeleteSubError(null)
       return
     }
-    // Deuxième clic sur le même sous-affilié : suppression effective.
     setDeleteSubError(null)
     try {
       const { error } = await supabase
@@ -487,32 +495,13 @@ export default function Dashboard() {
           <section className="page active">
             <div className="eyebrow">Programme d&apos;affiliation</div>
             <h1>Sous-affiliation</h1>
-            <div className="sub">Crée des sous-affiliés qui recrutent des clients pour toi.</div>
+            <div className="sub">Crée et gère des sous-affiliés qui recrutent des clients sous toi.</div>
 
             <div className="card" style={{ marginBottom: 20 }}>
               <div className="card-head"><h3>Comment ça marche</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
-                {affiliate.parent_affiliate_id ? (
-                  <>
-                    Tu crées un sous-affilié avec un code. Il obtient un lien pour ses clients, comptés sous ton
-                    compte. C&apos;est <b>toi</b> qui gères et verses sa part, comme tu le souhaites — Spark Idea ne
-                    s&apos;occupe que de ta commission à toi. (Comme tu es toi-même un sous-affilié activé, tes
-                    propres sous-affiliés ne peuvent pas être payés automatiquement par Spark Idea — c&apos;est
-                    plafonné à 2 niveaux.)
-                  </>
-                ) : (
-                  <>
-                    Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
-                    sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
-                    connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, avec son propre CPA fixe
-                    par client validé (10€ pour commencer). C&apos;est <b>lui</b> qui règle son CPA depuis ses
-                    Paramètres, dans la limite du tien — s&apos;il ne peut pas dépasser {euros(affiliate.cpa_amount_cents)}
-                    tant que ton propre CPA reste à ce niveau. Tant qu&apos;il n&apos;a pas créé son compte, c&apos;est
-                    à toi de le payer toi-même sur ses ventes via le lien client. Une fois activé, il peut lui aussi
-                    créer des sous-affiliés — mais ceux-là restent toujours payés à la main par lui, jamais par
-                    Spark Idea.
-                  </>
-                )}
+                Chaque sous-affilié que tu recrutes peut créer son propre compte. Tu peux ajuster son CPA directement
+                ci-dessous — dans la limite de ton propre CPA ({euros(affiliate.cpa_amount_cents)}).
               </div>
             </div>
 
@@ -544,31 +533,73 @@ export default function Dashboard() {
               {subError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>{subError}</div>}
             </div>
 
+            {recruits.length > 0 && (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <h3 style={{ marginBottom: 14 }}>Gestion du CPA de tes recrues directes</h3>
+                <table>
+                  <thead><tr><th>Recrue</th><th>Code</th><th>Son CPA actuel</th><th>Ajuster son CPA</th><th></th></tr></thead>
+                  <tbody>
+                    {recruits.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.email}</td>
+                        <td className="link-tag">{r.referral_code}</td>
+                        <td>{euros(r.cpa_amount_cents)}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <input
+                              type="number"
+                              min={0}
+                              max={affiliate.cpa_amount_cents / 100}
+                              step={1}
+                              value={editRecruitCpa[r.id] ?? (r.cpa_amount_cents / 100)}
+                              onChange={(e) => setEditRecruitCpa({ ...editRecruitCpa, [r.id]: Number(e.target.value) })}
+                              style={{ width: 80, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '6px 10px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
+                            />
+                            <span>€</span>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="btn-primary"
+                            style={{ padding: '6px 12px', fontSize: 12 }}
+                            onClick={() => saveRecruitCpa(r.id)}
+                            disabled={savingRecruitCpa[r.id]}
+                          >
+                            {savingRecruitCpa[r.id] ? '...' : 'Enregistrer'}
+                          </button>
+                          {recruitCpaError[r.id] && (
+                            <div style={{ fontSize: 11, color: '#f87171', marginTop: 4 }}>{recruitCpaError[r.id]}</div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             <div className="card">
               <h3 style={{ marginBottom: 14 }}>Mes sous-affiliés</h3>
               {subAffiliates.length === 0 ? (
                 <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun sous-affilié pour l&apos;instant.</div>
               ) : (
                 <table>
-                  <thead><tr><th>Sous-affilié</th>{!affiliate.parent_affiliate_id && <th>Compte</th>}<th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
+                  <thead><tr><th>Sous-affilié</th><th>Compte</th><th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
                   <tbody>
                     {subAffiliates.map((s) => {
                       const origin = typeof window !== 'undefined' ? window.location.origin : ''
                       const clientLink = `spark-idea.com/?ref=${affiliate.referral_code}&sub=${s.code}`
                       const inviteLink = `${origin}/signup?invite=${affiliate.referral_code}&subcode=${s.code}`
-                      const canInvite = !affiliate.parent_affiliate_id
                       return (
                         <tr key={s.id}>
                           <td>{s.name || s.code}</td>
-                          {canInvite && (
-                            <td>
-                              {s.linked_affiliate_id ? (
-                                <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé (payé auto)</span>
-                              ) : (
-                                <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>
-                              )}
-                            </td>
-                          )}
+                          <td>
+                            {s.linked_affiliate_id ? (
+                              <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé</span>
+                            ) : (
+                              <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>
+                            )}
+                          </td>
                           <td><span className={`pill ${s.active ? 't2 active-dot' : 't1'}`}>{s.active ? 'Actif' : 'Inactif'}</span></td>
                           <td>{s.clients_count}</td>
                           <td>{euros(s.revenue_generated_cents)}</td>
@@ -576,7 +607,7 @@ export default function Dashboard() {
                             <button className="copy" onClick={() => copyLink(clientLink)} title="Lien client">
                               {copiedLink === clientLink ? 'Copié !' : 'Lien client'}
                             </button>
-                            {canInvite && !s.linked_affiliate_id && (
+                            {!s.linked_affiliate_id && (
                               <button className="copy" style={{ marginLeft: 6 }} onClick={() => copyLink(inviteLink)} title="Lien d'invitation">
                                 {copiedLink === inviteLink ? 'Copié !' : 'Lien invitation'}
                               </button>
@@ -602,7 +633,6 @@ export default function Dashboard() {
                               </button>
                             )}
                           </td>
-
                         </tr>
                       )
                     })}
@@ -610,9 +640,6 @@ export default function Dashboard() {
                 </table>
               )}
               {deleteSubError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {deleteSubError}</div>}
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-                &quot;Revenu total généré&quot; est indicatif tant que le sous-affilié n&apos;a pas activé son compte. Une fois activé, il est payé automatiquement par Spark Idea, en plus de ta commission à toi.
-              </div>
             </div>
           </section>
         )}
@@ -681,26 +708,10 @@ export default function Dashboard() {
               <div className="card-head"><h3>Comment toi, tu gagnes de l&apos;argent avec ça</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
                 Chaque nouveau client que tu apportes te rapporte un <b style={{ color: 'var(--text)' }}>montant fixe, versé
-                une seule fois</b> dès que ce client est validé — quel que soit le forfait qu&apos;il choisit
-                (Starter, Pro ou Élite, ça ne change rien à ton gain).
+                une seule fois</b> dès que ce client est validé — quel que soit le forfait qu&apos;il choisit.
                 <br /><br />
-                Tu commences avec un <b style={{ color: 'var(--text)' }}>CPA de 10€ par client</b>. Ce montant n&apos;est
-                pas figé : plus tu apportes de clients de qualité qui restent actifs, plus l&apos;équipe Spark Idea
-                peut l&apos;augmenter manuellement — il n&apos;y a pas de plafond fixé à l&apos;avance. Certains
-                affiliés passent à 20€, 30€, 50€, 80€, 100€ ou plus selon leurs résultats.
-                <br /><br />
-                Concrètement : si tu ramènes 20 clients avec un CPA à 10€, tu touches <b style={{ color: 'var(--text)' }}>200€</b>,
-                versés au fur et à mesure que chaque client est validé — pas d&apos;un coup, mais garantis, sans
-                dépendre de la durée pendant laquelle ce client reste abonné.
-                <br /><br />
-                Important à savoir : si ton CPA change (par exemple de 10€ à 30€), ça ne s&apos;applique qu&apos;aux
-                <b style={{ color: 'var(--text)' }}> nouveaux</b> clients que tu apportes ensuite. Les clients déjà
-                validés avant le changement gardent le montant qui leur était associé au moment de leur validation.
-                <br /><br />
-                Tu as aussi <b style={{ color: 'var(--text)' }}>deux liens différents</b> : un lien client (pour vendre
-                directement) et un lien pour recruter d&apos;autres sous-affiliés, qui vendent sous toi avec leur
-                propre CPA. Plus ton équipe grandit, plus ton volume de clients apportés grandit avec elle — sans que
-                tu aies à vendre toi-même à chaque fois.
+                Tu commences avec un <b style={{ color: 'var(--text)' }}>CPA de 10€ par client</b>. Ce montant peut
+                être augmenté manuellement par l&apos;équipe Spark Idea selon tes résultats.
               </div>
             </div>
 
@@ -710,10 +721,6 @@ export default function Dashboard() {
                 &quot;Tu as une idée de projet mais tu ne sais pas par où commencer ? Décris-la à Spark Idea,
                 réponds à quelques questions, et reçois un plan d&apos;action complet en quelques minutes —
                 gratuit pour essayer, sans carte bancaire.&quot;
-              </div>
-              <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 14 }}>
-                Astuce : ce message marche bien tel quel en story Instagram, en DM, ou en légende de vidéo —
-                pas besoin de le réécrire à chaque fois.
               </div>
             </div>
           </section>
@@ -794,32 +801,17 @@ export default function Dashboard() {
                   <a className="btn-primary" href="/api/stripe-connect" style={{ textDecoration: 'none' }}>Connecter</a>
                 )}
               </div>
-              {affiliate.parent_affiliate_id ? (
-                <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-                  <div><div className="label">Ton CPA actuel</div><div className="desc">C&apos;est toi qui le règles, dans la limite de {maxCpaAmountCents !== null ? euros(maxCpaAmountCents) : '...'} (le CPA de la personne qui t&apos;a recruté).</div></div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input
-                        type="number"
-                        min={0}
-                        max={maxCpaAmountCents !== null ? maxCpaAmountCents / 100 : undefined}
-                        step={1}
-                        value={editCpaEuros}
-                        onChange={(e) => setEditCpaEuros(Number(e.target.value))}
-                        style={{ width: 90, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
-                      />
-                      <span className="static">€</span>
-                    </div>
-                    <button className="btn-primary" onClick={saveCpa} disabled={savingCpa}>{savingCpa ? '...' : cpaSaved ? '✅ Enregistré' : 'Enregistrer'}</button>
-                  </div>
-                  {cpaError && <div style={{ fontSize: 11.5, color: '#f87171' }}>{cpaError}</div>}
+
+              <div className="settings-row">
+                <div>
+                  <div className="label">Ton CPA actuel</div>
+                  <div className="desc">Montant reçu par client validé — ajusté manuellement par ton parrain ou par l&apos;équipe Spark Idea</div>
                 </div>
-              ) : (
-                <div className="settings-row">
-                  <div><div className="label">Ton CPA actuel</div><div className="desc">Montant reçu par client validé — ajusté manuellement par l&apos;équipe Spark Idea</div></div>
-                  <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>{euros(affiliate.cpa_amount_cents)}</span>
-                </div>
-              )}
+                <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>
+                  {euros(affiliate.cpa_amount_cents)}
+                </span>
+              </div>
+
               <div className="settings-row">
                 <div><div className="label">Ton lien</div><div className="desc">{link}</div></div>
                 <button className="btn-ghost" onClick={() => nav('liens')}>Voir mes liens</button>
