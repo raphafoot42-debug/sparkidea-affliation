@@ -1,5 +1,5 @@
 import { createAdminClient } from './supabase-admin'
-
+ 
 /**
  * Calcule et met à jour le taux de commission d'un affilié.
  * Règles (validées avec Raphaël) :
