@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function HomePage() {
   return (
-    <>
+    <> 
       <style jsx global>{`
 :root {
     --bg: #06080d;
