@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { stripe } from '@/lib/stripe' 
 import { createAdminClient } from '@/lib/supabase-admin'
-import Stripe from 'stripe'
+import Stripe from 'stripe' 
 
 // Stripe appelle cette URL automatiquement à chaque évènement de paiement.
 // C'est ce qui rend TOUT le système automatique — aucune action manuelle.
