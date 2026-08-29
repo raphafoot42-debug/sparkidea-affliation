@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin' 
   
 // Appelée juste après l'inscription d'un sous-affilié invité (voir signup.tsx,
-// juste après le insert dans 'affiliates'). Cette route manquait entièrement
+// juste après le insert dans 'affiliates'). Cette route manquait entièrement 
 // du projet — c'est ce qui faisait qu'un sous-affilié invité créait bien un
 // compte, mais restait invisible/non rattaché à son parent pour toujours.
 //
