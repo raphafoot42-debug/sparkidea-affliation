@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { createAdminClient } from '@/lib/supabase-admin' 
  
 // ⚠️ TODO avant mise en prod : vérifier que l'appelant est bien admin 
 // (même limitation que sur affiliate-cpa.ts et packs.ts — pas encore de
