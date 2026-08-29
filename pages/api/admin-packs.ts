@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const admin = createAdminClient()
   const { data, error } = await admin
-    .from('packs')
+    .from('packs') 
     .select('*')
     .order('starts_at', { ascending: false })
 
