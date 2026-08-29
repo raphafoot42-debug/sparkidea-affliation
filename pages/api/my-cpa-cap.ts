@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 // Un sous-affilié ne peut pas lire la fiche complète de son parent (RLS
-// l'en empêche, à raison — il ne doit voir ni son email ni ses stats).
+// l'en empêche, à raison — il ne doit voir ni son email ni ses stats). 
 // Cette route ne renvoie donc QUE le montant du plafond, rien d'autre,
 // pour que le dashboard puisse afficher "Maximum : X €" et valider avant
 // même d'appeler affiliate-self-cpa.ts.
