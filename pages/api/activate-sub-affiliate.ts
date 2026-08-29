@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@/lib/supabase-server'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { createAdminClient } from '@/lib/supabase-admin' 
  
 // Appelée juste après l'inscription d'un sous-affilié invité (voir signup.tsx,
 // juste après le insert dans 'affiliates'). Cette route manquait entièrement
