@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin' 
-import { stripe } from '@/lib/stripe' 
+import { stripe } from '@/lib/stripe'  
 
 function appUrl() {
   return process.env.NEXT_PUBLIC_APP_URL!.replace(/\/+$/, '') 
