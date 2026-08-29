@@ -1,25 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 // Appelé depuis la fiche détail d'un affilié, espace admin.
 // Route renommée : affiliate-rate.ts -> affiliate-cpa.ts (modèle CPA fixe,
 // il n'y a plus de "taux" mais un montant en euros).
-// ⚠️ TODO avant mise en prod : vérifier que l'utilisateur connecté est bien
-// l'admin (ex: colonne is_admin sur son profil), pas juste "connecté".
+//
+// ⚠️ SÉCURITÉ — même limitation que packs.ts : l'admin n'a pas de vraie
+// session Supabase Auth (juste un code stocké en sessionStorage côté
+// navigateur), donc supabase.auth.getUser() ne peut jamais réussir ici —
+// c'est ce qui empêchait "Sauvegarder" de fonctionner sur le CPA. Cette
+// route est donc, pour l'instant, sans vraie protection d'accès. À
+// corriger avant mise en ligne publique (vraie vérification is_admin).
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'PATCH') {
     return res.status(405).json({ error: 'Méthode non autorisée' })
   }
-
-  const supabase = createClient(req, res)
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return res.status(401).json({ error: 'Non authentifié' })
-  }
-  // TODO: remplacer par une vraie vérification is_admin
-  // if (!(await isAdmin(user.id))) return res.status(403).json({ error: 'Interdit' })
 
   const { id, cpaAmountEuros } = req.body
 

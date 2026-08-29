@@ -11,6 +11,24 @@
     --tier3:#fbbf24;
     --tier4:#c084fc;
   }
+
+  /* Thème clair — activé via data-theme="light" sur <html>, voir
+     dashboard.tsx/setTheme(). Manquait entièrement avant cette correction :
+     le bouton changeait bien l'attribut, mais aucune variable claire
+     n'existait, donc rien ne changeait visuellement. */
+  [data-theme="light"]{
+    --bg:#f4f4f8;
+    --panel:#ffffff;
+    --panel-2:#f0f0f6;
+    --border:#dcdce6;
+    --text:#15151d;
+    --muted:#68687d;
+    --cyan:#0891b2;
+    --tier1:#6b7280;
+    --tier2:#0284c7;
+    --tier3:#b45309;
+    --tier4:#9333ea;
+  }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{ background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; min-height:100vh; overflow-x:hidden; }
   #grid-canvas{ position:fixed; inset:0; z-index:0; opacity:.3; }
