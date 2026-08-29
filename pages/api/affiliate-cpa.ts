@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 // Appelé depuis la fiche détail d'un affilié, espace admin.
 // Route renommée : affiliate-rate.ts -> affiliate-cpa.ts (modèle CPA fixe,
 // il n'y a plus de "taux" mais un montant en euros).
-//
+// 
 // ⚠️ SÉCURITÉ — même limitation que packs.ts : l'admin n'a pas de vraie
 // session Supabase Auth (juste un code stocké en sessionStorage côté
 // navigateur), donc supabase.auth.getUser() ne peut jamais réussir ici —
