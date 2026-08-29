@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { stripe } from '@/lib/stripe' 
+import { stripe } from '@/lib/stripe'  
 import { createAdminClient } from '@/lib/supabase-admin'
 import Stripe from 'stripe' 
  
