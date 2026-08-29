@@ -459,7 +459,7 @@ export default function HomePage() {
         <span className="badge">Programme d&apos;affiliation</span>
         <h1>Chaque client, <span className="grad">un gain garanti</span></h1>
         <p>
-          Commence avec 15 € de CPA par client validé. Plus tu ramènes de clients de qualité,
+          Commence avec 10 € de CPA par client validé. Plus tu ramènes de clients de qualité,
           plus ton CPA peut augmenter — sans plafond fixé à l&apos;avance.
         </p>
         <div className="hero-ctas">
@@ -475,13 +475,13 @@ export default function HomePage() {
         <h2 className="section-title">Un client validé, un gain acquis</h2>
         <p className="section-sub">Ton CPA est versé une seule fois par client, dès sa validation — pas besoin d&apos;attendre, pas de reprise possible ensuite.</p>
         <div className="recur-strip">
-          <div className="recur-item"><div className="recur-day">Client 1</div><div className="recur-amt">15 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 1</div><div className="recur-amt">10 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Client 2</div><div className="recur-amt">30 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 2</div><div className="recur-amt">20 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Client 3</div><div className="recur-amt">45 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 3</div><div className="recur-amt">30 €</div></div>
           <div className="recur-arrow">→</div>
-          <div className="recur-item"><div className="recur-day">Client 4</div><div className="recur-amt">60 €</div></div>
+          <div className="recur-item"><div className="recur-day">Client 4</div><div className="recur-amt">40 €</div></div>
         </div>
       </section>
 
@@ -515,7 +515,7 @@ export default function HomePage() {
           </div>
           <div className="tier-row">
             <span className="tier-range">Tout nouvel affilié</span>
-            <span className="tier-rate">15 €</span>
+            <span className="tier-rate">10 €</span>
             <span className="tier-note">Ton CPA de départ, dès ton premier client, quel que soit le forfait choisi.</span>
           </div>
           <div className="tier-row">

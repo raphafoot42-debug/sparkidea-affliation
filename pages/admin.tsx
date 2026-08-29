@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 const pageTitles: Record<string, string> = {
   'ad-overview': "Vue d'ensemble",
   'ad-affilies': 'Affiliés',
+  'ad-sub-affilies': 'Sous-affiliés',
   'ad-packs': 'Packs',
   'ad-messages': 'Messages',
   'ad-parametres': 'Paramètres',
@@ -15,6 +16,7 @@ type AdminAffiliate = {
   referral_code: string
   cpa_amount_cents: number
   active_clients_count: number
+  clicks_count: number
   stripe_connected: boolean
   revenue_total_cents: number
   revenue_this_month_cents: number
@@ -29,6 +31,17 @@ type AdminPack = {
   active: boolean
 }
 type AdminMessage = { id: string; affiliate_id: string; sender: string; body: string; created_at: string }
+type AdminSubAffiliate = {
+  id: string
+  code: string
+  name: string | null
+  active: boolean
+  clients_count: number
+  revenue_generated_cents: number
+  linked_affiliate_id: string | null
+  affiliate_id: string
+  parent_email: string
+}
 
 function euros(cents: number) {
   return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
@@ -53,6 +66,7 @@ export default function Admin() {
 
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('ad-overview')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
@@ -61,7 +75,6 @@ export default function Admin() {
   useEffect(() => {
     const saved = (localStorage.getItem('sparkidea-theme') as 'dark' | 'light') || 'dark'
     setThemeState(saved)
-    document.documentElement.setAttribute('data-theme', saved)
   }, [])
 
   useEffect(() => {
@@ -76,14 +89,24 @@ export default function Admin() {
   const [affiliates, setAffiliates] = useState<AdminAffiliate[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<AdminAffiliate | null>(null)
-  const [detailCpaEuros, setDetailCpaEuros] = useState(15)
+  const [detailCpaEuros, setDetailCpaEuros] = useState(10)
   const [savingDetail, setSavingDetail] = useState(false)
+  const [detailCpaError, setDetailCpaError] = useState<string | null>(null)
 
   const [packs, setPacks] = useState<AdminPack[]>([])
   const [showPackForm, setShowPackForm] = useState(false)
   const [packTitle, setPackTitle] = useState('')
   const [packDesc, setPackDesc] = useState('')
   const [packReward, setPackReward] = useState('')
+  const [savingPack, setSavingPack] = useState(false)
+  const [packError, setPackError] = useState<string | null>(null)
+  const [confirmDeletePackId, setConfirmDeletePackId] = useState<string | null>(null)
+  const [deletePackError, setDeletePackError] = useState<string | null>(null)
+
+  const [subAffiliates, setSubAffiliates] = useState<AdminSubAffiliate[]>([])
+  const [subSearch, setSubSearch] = useState('')
+  const [confirmDeleteSubId, setConfirmDeleteSubId] = useState<string | null>(null)
+  const [deleteSubErrorAdmin, setDeleteSubErrorAdmin] = useState<string | null>(null)
 
   const [messages, setMessages] = useState<AdminMessage[]>([])
   const [msgAffiliates, setMsgAffiliates] = useState<{ id: string; email: string }[]>([])
@@ -116,16 +139,32 @@ export default function Admin() {
   useEffect(() => {
     if (checkingAccess) return
     async function load() {
-      const [affRes, packRes, msgRes] = await Promise.all([
-        fetch('/api/admin-affiliates').then((r) => r.json()),
-        fetch('/api/admin-packs').then((r) => r.json()),
-        fetch('/api/admin-messages').then((r) => r.json()),
-      ])
-      setAffiliates(affRes.affiliates ?? [])
-      setPacks(packRes.packs ?? [])
-      setMessages(msgRes.messages ?? [])
-      setMsgAffiliates(msgRes.affiliates ?? [])
-      if (msgRes.affiliates?.length) setSelectedConvo(msgRes.affiliates[0].id)
+      setLoadError(null)
+      try {
+        const [affRes, packRes, msgRes, subRes] = await Promise.all([
+          fetch('/api/admin-affiliates').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-packs').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-messages').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-sub-affiliates').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+        ])
+        const failures: string[] = []
+        if (!affRes.ok) failures.push(`Affiliés (${affRes.body.error ?? 'erreur inconnue'})`)
+        if (!packRes.ok) failures.push(`Packs (${packRes.body.error ?? 'erreur inconnue'})`)
+        if (!msgRes.ok) failures.push(`Messages (${msgRes.body.error ?? 'erreur inconnue'})`)
+        if (!subRes.ok) failures.push(`Sous-affiliés (${subRes.body.error ?? 'erreur inconnue'})`)
+        if (failures.length) {
+          setLoadError(`Certaines données n'ont pas pu être chargées : ${failures.join(' · ')}`)
+        }
+
+        setAffiliates(affRes.body.affiliates ?? [])
+        setPacks(packRes.body.packs ?? [])
+        setMessages(msgRes.body.messages ?? [])
+        setMsgAffiliates(msgRes.body.affiliates ?? [])
+        if (msgRes.body.affiliates?.length) setSelectedConvo(msgRes.body.affiliates[0].id)
+        setSubAffiliates(subRes.body.subAffiliates ?? [])
+      } catch (err) {
+        setLoadError('Impossible de contacter le serveur pour charger les données admin. Vérifie ta connexion et réessaie.')
+      }
       setLoading(false)
     }
     load()
@@ -140,41 +179,104 @@ export default function Admin() {
   function openDetail(a: AdminAffiliate) {
     setSelected(a)
     setDetailCpaEuros(a.cpa_amount_cents / 100)
+    setDetailCpaError(null)
   }
 
   async function saveDetail() {
     if (!selected) return
+    setDetailCpaError(null)
     setSavingDetail(true)
-    const res = await fetch('/api/affiliate-cpa', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: selected.id, cpaAmountEuros: detailCpaEuros }),
-    })
-    setSavingDetail(false)
-    if (res.ok) {
-      const cpaAmountCents = Math.round(detailCpaEuros * 100)
-      setAffiliates((prev) =>
-        prev.map((a) => (a.id === selected.id ? { ...a, cpa_amount_cents: cpaAmountCents } : a))
-      )
-      setSelected(null)
+    try {
+      const res = await fetch('/api/affiliate-cpa', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selected.id, cpaAmountEuros: detailCpaEuros }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        const cpaAmountCents = Math.round(detailCpaEuros * 100)
+        setAffiliates((prev) =>
+          prev.map((a) => (a.id === selected.id ? { ...a, cpa_amount_cents: cpaAmountCents } : a))
+        )
+        setSelected(null)
+      } else {
+        setDetailCpaError(body.error ?? `Erreur inattendue (code ${res.status}).`)
+      }
+    } catch (err) {
+      setDetailCpaError('Impossible de contacter le serveur. Vérifie ta connexion et réessaie.')
     }
+    setSavingDetail(false)
   }
 
   async function createPack() {
+    setPackError(null)
     const rewardEuros = parseFloat(packReward.replace(',', '.'))
-    if (!packTitle.trim() || !packDesc.trim() || !rewardEuros) return
-    const res = await fetch('/api/packs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: packTitle.trim(), description: packDesc.trim(), rewardEuros }),
-    })
-    if (res.ok) {
-      const { pack } = await res.json()
-      setPacks((prev) => [pack, ...prev])
-      setPackTitle('')
-      setPackDesc('')
-      setPackReward('')
-      setShowPackForm(false)
+    if (!packTitle.trim() || !packDesc.trim() || !rewardEuros) {
+      setPackError('Merci de remplir le titre, la description et un gain valide avant de publier.')
+      return
+    }
+    setSavingPack(true)
+    try {
+      const res = await fetch('/api/packs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: packTitle.trim(), description: packDesc.trim(), rewardEuros }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setPacks((prev) => [body.pack, ...prev])
+        setPackTitle('')
+        setPackDesc('')
+        setPackReward('')
+        setShowPackForm(false)
+      } else {
+        setPackError(body.error ?? `Erreur inattendue (code ${res.status}). Le pack n'a pas été publié.`)
+      }
+    } catch (err) {
+      setPackError('Impossible de contacter le serveur. Vérifie ta connexion et réessaie.')
+    }
+    setSavingPack(false)
+  }
+
+  async function deletePack(id: string) {
+    if (confirmDeletePackId !== id) {
+      setConfirmDeletePackId(id)
+      setDeletePackError(null)
+      return
+    }
+    setDeletePackError(null)
+    try {
+      const res = await fetch(`/api/packs?id=${id}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setPacks((prev) => prev.filter((p) => p.id !== id))
+        setConfirmDeletePackId(null)
+      } else {
+        setDeletePackError(body.error ?? `Erreur inattendue (code ${res.status}).`)
+      }
+    } catch (err) {
+      setDeletePackError('Impossible de contacter le serveur. Vérifie ta connexion et réessaie.')
+    }
+  }
+
+  async function deleteSub(id: string) {
+    if (confirmDeleteSubId !== id) {
+      setConfirmDeleteSubId(id)
+      setDeleteSubErrorAdmin(null)
+      return
+    }
+    setDeleteSubErrorAdmin(null)
+    try {
+      const res = await fetch(`/api/admin-sub-affiliates?id=${id}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setSubAffiliates((prev) => prev.filter((s) => s.id !== id))
+        setConfirmDeleteSubId(null)
+      } else {
+        setDeleteSubErrorAdmin(body.error ?? `Erreur inattendue (code ${res.status}).`)
+      }
+    } catch (err) {
+      setDeleteSubErrorAdmin('Impossible de contacter le serveur. Vérifie ta connexion et réessaie.')
     }
   }
 
@@ -292,6 +394,7 @@ export default function Admin() {
         {[
           ['ad-overview', '◆', "Vue d'ensemble"],
           ['ad-affilies', '☰', 'Affiliés'],
+          ['ad-sub-affilies', '🌱', 'Sous-affiliés'],
           ['ad-packs', '🎁', 'Packs'],
           ['ad-messages', '✉', 'Messages'],
           ['ad-parametres', '⚙', 'Paramètres'],
@@ -303,6 +406,11 @@ export default function Admin() {
       </div>
 
       <main>
+        {loadError && (
+          <div className="card" style={{ marginBottom: 20, borderColor: '#f87171', color: '#f87171', fontSize: 13 }}>
+            ⚠️ {loadError}
+          </div>
+        )}
         {activeTab === 'ad-overview' && (
           <section className="page active">
             <div className="eyebrow">Espace admin</div>
@@ -433,13 +541,15 @@ export default function Admin() {
                 <input className="search" placeholder="Rechercher un affilié..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <table>
-                <thead><tr><th>Affilié</th><th>CPA actuel</th><th>Clients actifs</th><th>Revenu généré</th><th>Payé ce mois</th><th>Stripe</th></tr></thead>
+                <thead><tr><th>Affilié</th><th>CPA actuel</th><th>Clics</th><th>Clients actifs</th><th>Conversion</th><th>Revenu généré</th><th>Payé ce mois</th><th>Stripe</th></tr></thead>
                 <tbody>
                   {filteredAffiliates.map((a) => (
                     <tr key={a.id} onClick={() => openDetail(a)} style={{ cursor: 'pointer' }}>
                       <td>{a.email}</td>
                       <td><span className={`pill ${tierClass(a.cpa_amount_cents)}`}>{euros(a.cpa_amount_cents)}</span></td>
+                      <td>{a.clicks_count}</td>
                       <td>{a.active_clients_count}</td>
+                      <td>{a.clicks_count > 0 ? `${((a.active_clients_count / a.clicks_count) * 100).toFixed(1)}%` : '—'}</td>
                       <td>{euros(a.revenue_total_cents)}</td>
                       <td>{euros(a.revenue_this_month_cents)}</td>
                       <td>{a.stripe_connected ? '✅ Connecté' : '⏳ En attente'}</td>
@@ -448,6 +558,76 @@ export default function Admin() {
                 </tbody>
               </table>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>Clique sur un affilié pour voir sa fiche et ajuster ses paramètres.</div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'ad-sub-affilies' && (
+          <section className="page active">
+            <div className="eyebrow">Espace admin</div>
+            <h1>Sous-affiliés</h1>
+            <div className="sub">Tous les sous-affiliés créés par tes affiliés de niveau 1, tous comptes confondus.</div>
+
+            <div className="admin-toolbar">
+              <input
+                type="text"
+                placeholder="Rechercher un code, un nom, un affilié parent..."
+                value={subSearch}
+                onChange={(e) => setSubSearch(e.target.value)}
+                style={{ flex: 1, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'Inter',sans-serif" }}
+              />
+            </div>
+
+            <div className="card">
+              {subAffiliates.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun sous-affilié pour l&apos;instant.</div>
+              ) : (
+                <table>
+                  <thead><tr><th>Code</th><th>Nom</th><th>Créé par</th><th>Statut</th><th>Compte lié</th><th>Clients apportés</th><th>Revenu généré</th><th></th></tr></thead>
+                  <tbody>
+                    {subAffiliates
+                      .filter((s) => {
+                        const q = subSearch.toLowerCase()
+                        return !q || s.code.toLowerCase().includes(q) || (s.name ?? '').toLowerCase().includes(q) || s.parent_email.toLowerCase().includes(q)
+                      })
+                      .map((s) => (
+                        <tr key={s.id}>
+                          <td className="link-tag">{s.code}</td>
+                          <td>{s.name || '—'}</td>
+                          <td>{s.parent_email}</td>
+                          <td><span className={`pill ${s.active ? 't2 active-dot' : 't1'}`}>{s.active ? 'Actif' : 'Inactif'}</span></td>
+                          <td>{s.linked_affiliate_id ? <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé</span> : <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>}</td>
+                          <td>{s.clients_count}</td>
+                          <td>{euros(s.revenue_generated_cents)}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              className="btn-ghost"
+                              style={{
+                                padding: '6px 12px', fontSize: 11,
+                                borderColor: '#f87171', color: '#f87171',
+                                background: confirmDeleteSubId === s.id ? 'rgba(248,113,113,0.12)' : undefined,
+                              }}
+                              onClick={() => deleteSub(s.id)}
+                            >
+                              {confirmDeleteSubId === s.id ? 'Confirmer ?' : '🗑'}
+                            </button>
+                            {confirmDeleteSubId === s.id && (
+                              <button className="btn-ghost" style={{ padding: '6px 12px', fontSize: 11, marginLeft: 6 }} onClick={() => setConfirmDeleteSubId(null)}>
+                                Annuler
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+              {deleteSubErrorAdmin && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {deleteSubErrorAdmin}</div>}
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
+                &quot;Compte lié&quot; signifie que ce sous-affilié a créé son propre compte et connecté son Stripe —
+                il est alors payé directement par Spark Idea avec son propre CPA, en plus de la commission de
+                l&apos;affilié qui l&apos;a recruté.
+              </div>
             </div>
           </section>
         )}
@@ -478,9 +658,10 @@ export default function Admin() {
                   <div className="row-input"><input type="number" value={packReward} onChange={(e) => setPackReward(e.target.value)} placeholder="100" /> <span className="static">€</span></div>
                 </div>
                 <div className="detail-actions">
-                  <button className="btn-primary" onClick={createPack}>Publier le pack</button>
-                  <button className="btn-ghost" onClick={() => setShowPackForm(false)}>Annuler</button>
+                  <button className="btn-primary" onClick={createPack} disabled={savingPack}>{savingPack ? 'Publication...' : 'Publier le pack'}</button>
+                  <button className="btn-ghost" onClick={() => { setShowPackForm(false); setPackError(null) }}>Annuler</button>
                 </div>
+                {packError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {packError}</div>}
               </div>
             )}
 
@@ -497,10 +678,29 @@ export default function Admin() {
                       <span>{p.active ? 'Actif' : 'Inactif'}</span>
                       <span>{p.ends_at ? `Fin le ${new Date(p.ends_at).toLocaleDateString('fr-FR')}` : 'Sans date de fin'}</span>
                     </div>
+                    <div style={{ marginTop: 12, textAlign: 'right' }}>
+                      <button
+                        className="btn-ghost"
+                        style={{
+                          padding: '6px 12px', fontSize: 11,
+                          borderColor: '#f87171', color: '#f87171',
+                          background: confirmDeletePackId === p.id ? 'rgba(248,113,113,0.12)' : undefined,
+                        }}
+                        onClick={() => deletePack(p.id)}
+                      >
+                        {confirmDeletePackId === p.id ? 'Confirmer ?' : '🗑 Supprimer'}
+                      </button>
+                      {confirmDeletePackId === p.id && (
+                        <button className="btn-ghost" style={{ padding: '6px 12px', fontSize: 11, marginLeft: 6 }} onClick={() => setConfirmDeletePackId(null)}>
+                          Annuler
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+            {deletePackError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {deletePackError}</div>}
           </section>
         )}
 
@@ -606,7 +806,7 @@ export default function Admin() {
               <h3>{selected.email}</h3>
               <button className="close-x" onClick={() => setSelected(null)}>✕</button>
             </div>
-            <div className="detail-sub">{selected.active_clients_count} clients actifs</div>
+            <div className="detail-sub">{selected.active_clients_count} clients actifs · {selected.clicks_count} clics sur son lien</div>
             <div className="field">
               <label>CPA actuel (par client validé)</label>
               <div className="row-input">
@@ -626,6 +826,7 @@ export default function Admin() {
               <button className="btn-primary" onClick={saveDetail} disabled={savingDetail}>{savingDetail ? 'Enregistrement...' : 'Enregistrer'}</button>
               <button className="btn-ghost" onClick={() => setSelected(null)}>Annuler</button>
             </div>
+            {detailCpaError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {detailCpaError}</div>}
           </div>
         </div>
       )}
