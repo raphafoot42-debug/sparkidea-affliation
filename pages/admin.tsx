@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 
 const pageTitles: Record<string, string> = { 
   'ad-overview': "Vue d'ensemble",
-  'ad-affilies': 'Affiliés',
+  'ad-affilies': 'Affiliés', 
   'ad-sub-affilies': 'Sous-affiliés',
   'ad-packs': 'Packs',
   'ad-messages': 'Messages',
