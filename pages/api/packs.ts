@@ -1,33 +1,45 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { createAdminClient, verifyAdminAccess } from '@/lib/supabase-admin'
 
-// ⚠️ SÉCURITÉ — pas de vraie vérification d'identité pour l'instant.
-// L'admin se connecte via un simple code tapé sur /signup, stocké dans
-// sessionStorage côté navigateur (voir signup.tsx / admin.tsx) — ce n'est
-// PAS une session Supabase Auth. Cette route est donc, pour l'instant,
-// appelable par n'importe qui qui en devine l'URL, sans protection réelle.
-// À corriger avant toute mise en ligne publique en ajoutant une vraie
-// vérification (ex: colonne is_admin + vraie session Supabase pour
-// l'admin, ou au minimum une clé secrète partagée envoyée en en-tête).
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const admin = createAdminClient()
+  if (req.method === 'GET') {
+    const admin = createAdminClient()
+    const { data: packs, error } = await admin
+      .from('packs')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false })
 
-  if (req.method === 'POST') {
-    const { title, description, rewardEuros, targetCount, targetPlan, endsAt } = req.body
-
-    if (!title || !description || !rewardEuros) {
-      return res.status(400).json({ error: 'Champs manquants' })
+    if (error) {
+      return res.status(500).json({ error: error.message })
     }
 
-    const { data, error } = await admin
+    return res.status(200).json({ packs: packs ?? [] })
+  }
+
+  if (req.method === 'POST') {
+    if (!verifyAdminAccess(req)) {
+      return res.status(401).json({ error: 'Accès admin non autorisé' })
+    }
+
+    const { title, description, rewardEuros, targetCount, endsAt } = req.body
+
+    if (!title || !description || typeof rewardEuros !== 'number' || rewardEuros <= 0) {
+      return res.status(400).json({ error: 'Renseigne un titre, une description et un montant valide (supérieur à 0 €).' })
+    }
+
+    const rewardCents = Math.round(rewardEuros * 100)
+    const admin = createAdminClient()
+
+    const { data: pack, error } = await admin
       .from('packs')
       .insert({
         title,
         description,
-        reward_cents: Math.round(rewardEuros * 100),
-        target_count: targetCount ?? null,
-        target_plan: targetPlan ?? null,
-        ends_at: endsAt ?? null,
+        reward_cents: rewardCents,
+        target_count: targetCount || null,
+        ends_at: endsAt || null,
+        active: true,
       })
       .select()
       .single()
@@ -36,18 +48,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: error.message })
     }
 
-    // TODO: notifier les affiliés du nouveau pack (email Resend ou notification in-app)
-
-    return res.status(200).json({ pack: data })
+    return res.status(200).json({ pack })
   }
 
   if (req.method === 'DELETE') {
-    const id = (req.query.id as string) ?? req.body?.id
-
-    if (!id) {
-      return res.status(400).json({ error: 'id du pack manquant' })
+    if (!verifyAdminAccess(req)) {
+      return res.status(401).json({ error: 'Accès admin non autorisé' })
     }
 
+    const id = typeof req.query.id === 'string' ? req.query.id : null
+    if (!id) {
+      return res.status(400).json({ error: 'ID du pack manquant' })
+    }
+
+    const admin = createAdminClient()
     const { error } = await admin.from('packs').delete().eq('id', id)
 
     if (error) {

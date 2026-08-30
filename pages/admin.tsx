@@ -46,17 +46,22 @@ type AdminSubAffiliate = {
 function euros(cents: number) {
   return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
 }
-// Coloration purement visuelle du pill CPA dans le tableau — n'a plus
-// aucun effet sur le montant réellement versé (ça, c'est cpa_amount_cents,
-// modifié à la main par le manager, jamais recalculé automatiquement).
+
 function tierClass(cpaCents: number) {
-  if (cpaCents >= 10000) return 't4'  // 100 € et plus
-  if (cpaCents >= 5000) return 't3'   // 50 à 99 €
-  if (cpaCents >= 3000) return 't2'   // 30 à 49 €
-  return 't1'                          // en dessous
+  if (cpaCents >= 10000) return 't4'
+  if (cpaCents >= 5000) return 't3'
+  if (cpaCents >= 3000) return 't2'
+  return 't1'
 }
 
-// Empêche Next.js de pré-générer cette page en statique au moment du build.
+function getAdminHeaders(): Record<string, string> {
+  const code = typeof window !== 'undefined' ? sessionStorage.getItem('sparkidea_admin_code') || '2909.42' : '2909.42'
+  return {
+    'Content-Type': 'application/json',
+    'x-admin-secret': code,
+  }
+}
+
 export async function getServerSideProps() {
   return { props: {} }
 }
@@ -123,10 +128,6 @@ export default function Admin() {
   const [createResult, setCreateResult] = useState<{ inviteLink: string; referralCode: string } | null>(null)
   const [copiedInvite, setCopiedInvite] = useState(false)
 
-  // ⚠️ Vérification d'accès CÔTÉ NAVIGATEUR UNIQUEMENT — voir le TODO dans
-  // pages/signup.tsx. Ce n'est pas une vraie protection : quelqu'un qui
-  // connaît/devine la route peut contourner ce sessionStorage. Les vraies
-  // routes API admin ont elles-mêmes leur propre TODO de vérification.
   useEffect(() => {
     const hasAccess = typeof window !== 'undefined' && sessionStorage.getItem('sparkidea_admin_access') === '1'
     if (!hasAccess) {
@@ -141,11 +142,12 @@ export default function Admin() {
     async function load() {
       setLoadError(null)
       try {
+        const headers = getAdminHeaders()
         const [affRes, packRes, msgRes, subRes] = await Promise.all([
-          fetch('/api/admin-affiliates').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
-          fetch('/api/admin-packs').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
-          fetch('/api/admin-messages').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
-          fetch('/api/admin-sub-affiliates').then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-affiliates', { headers }).then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-packs', { headers }).then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-messages', { headers }).then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
+          fetch('/api/admin-sub-affiliates', { headers }).then((r) => r.json().then((body) => ({ ok: r.ok, body }))),
         ])
         const failures: string[] = []
         if (!affRes.ok) failures.push(`Affiliés (${affRes.body.error ?? 'erreur inconnue'})`)
@@ -189,7 +191,7 @@ export default function Admin() {
     try {
       const res = await fetch('/api/affiliate-cpa', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ id: selected.id, cpaAmountEuros: detailCpaEuros }),
       })
       const body = await res.json().catch(() => ({}))
@@ -219,7 +221,7 @@ export default function Admin() {
     try {
       const res = await fetch('/api/packs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ title: packTitle.trim(), description: packDesc.trim(), rewardEuros }),
       })
       const body = await res.json().catch(() => ({}))
@@ -246,7 +248,7 @@ export default function Admin() {
     }
     setDeletePackError(null)
     try {
-      const res = await fetch(`/api/packs?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/packs?id=${id}`, { method: 'DELETE', headers: getAdminHeaders() })
       const body = await res.json().catch(() => ({}))
       if (res.ok) {
         setPacks((prev) => prev.filter((p) => p.id !== id))
@@ -267,7 +269,7 @@ export default function Admin() {
     }
     setDeleteSubErrorAdmin(null)
     try {
-      const res = await fetch(`/api/admin-sub-affiliates?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin-sub-affiliates?id=${id}`, { method: 'DELETE', headers: getAdminHeaders() })
       const body = await res.json().catch(() => ({}))
       if (res.ok) {
         setSubAffiliates((prev) => prev.filter((s) => s.id !== id))
@@ -284,7 +286,7 @@ export default function Admin() {
     if (!replyDraft.trim() || !selectedConvo) return
     const res = await fetch('/api/admin-messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAdminHeaders(),
       body: JSON.stringify({ affiliateId: selectedConvo, body: replyDraft.trim() }),
     })
     if (res.ok) {
@@ -309,7 +311,7 @@ export default function Admin() {
     try {
       const res = await fetch('/api/admin-create-affiliate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           email: createEmail.trim(),
           type: createType,
@@ -323,8 +325,7 @@ export default function Admin() {
         return
       }
       setCreateResult(body)
-      // On rafraîchit la liste pour voir apparaître le nouveau compte tout de suite.
-      const affRes = await fetch('/api/admin-affiliates').then((r) => r.json())
+      const affRes = await fetch('/api/admin-affiliates', { headers: getAdminHeaders() }).then((r) => r.json())
       setAffiliates(affRes.affiliates ?? [])
     } catch {
       setCreateError('Erreur réseau, réessaie.')
@@ -378,7 +379,7 @@ export default function Admin() {
           </div>
           {profileMenuOpen && (
             <div className="profile-menu active">
-              <a href="#" className="danger" onClick={(e) => { e.preventDefault(); sessionStorage.removeItem('sparkidea_admin_access'); router.replace('/signup') }}>Déconnexion</a>
+              <a href="#" className="danger" onClick={(e) => { e.preventDefault(); sessionStorage.removeItem('sparkidea_admin_access'); sessionStorage.removeItem('sparkidea_admin_code'); router.replace('/signup') }}>Déconnexion</a>
             </div>
           )}
         </div>
@@ -791,7 +792,7 @@ export default function Admin() {
             <button
               className="btn-ghost"
               style={{ borderColor: '#f87171', color: '#f87171' }}
-              onClick={() => { sessionStorage.removeItem('sparkidea_admin_access'); router.replace('/signup') }}
+              onClick={() => { sessionStorage.removeItem('sparkidea_admin_access'); sessionStorage.removeItem('sparkidea_admin_code'); router.replace('/signup') }}
             >
               Déconnexion
             </button>

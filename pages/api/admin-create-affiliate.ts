@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { createAdminClient, verifyAdminAccess } from '@/lib/supabase-admin'
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -13,6 +13,10 @@ function generateReferralCode(): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' })
+  }
+
+  if (!verifyAdminAccess(req)) {
+    return res.status(401).json({ error: 'Accès admin non autorisé' })
   }
 
   const { email, type, parentReferralCode, name } = req.body
@@ -53,7 +57,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     attempts++
   }
 
-  // Création de l'utilisateur Supabase Auth sans mot de passe initial
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
@@ -63,7 +66,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: authError?.message || 'Erreur lors de la création de l\'utilisateur' })
   }
 
-  // Insertion dans la table affiliates (avec CPA par défaut 1000 = 10€)
   const { error: affiliateError } = await admin.from('affiliates').insert({
     id: authUser.user.id,
     email,

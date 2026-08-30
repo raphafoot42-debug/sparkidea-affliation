@@ -2,9 +2,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { createClient } from '@/lib/supabase-client'
 
-// ⚠️ Démo front-end : ce code est visible dans le JS envoyé au navigateur.
-// Avant mise en prod, remplacer par une vraie vérification côté serveur
-// (route API + colonne is_admin), jamais un code en dur côté client.
 const ADMIN_DEMO_CODE = '2909.42'
 
 function generateReferralCode(email: string) {
@@ -25,8 +22,6 @@ export default function SignupPage() {
   const [adminCode, setAdminCode] = useState('')
   const [adminError, setAdminError] = useState(false)
 
-  // Présents si on arrive via un lien d'invitation généré par un affilié
-  // depuis son onglet Sous-affiliation (voir dashboard.tsx).
   const inviteCode = typeof router.query.invite === 'string' ? router.query.invite : null
   const subCode = typeof router.query.subcode === 'string' ? router.query.subcode : null
   const isInvite = Boolean(inviteCode && subCode)
@@ -77,15 +72,11 @@ export default function SignupPage() {
         if (!activateRes.ok) {
           const body = await activateRes.json().catch(() => ({}))
           console.error('Erreur activation sous-affilié:', body?.error)
-          // On ne bloque pas l'inscription pour ça : le compte existe déjà,
-          // on continue vers Stripe. Le rattachement pourra être corrigé à la main.
         }
       }
 
       window.location.href = '/api/stripe-connect'
     } catch (err) {
-      // Filet de sécurité : n'importe quelle erreur inattendue (réseau, config
-      // manquante, etc.) s'affiche maintenant au lieu de bloquer le bouton.
       console.error('Erreur inattendue signup:', err)
       setError(err instanceof Error ? err.message : 'Erreur inattendue, réessaie.')
     } finally {
@@ -96,6 +87,7 @@ export default function SignupPage() {
   function submitAdminCode() {
     if (adminCode.trim() === ADMIN_DEMO_CODE) {
       sessionStorage.setItem('sparkidea_admin_access', '1')
+      sessionStorage.setItem('sparkidea_admin_code', adminCode.trim())
       router.push('/admin')
       return
     }
