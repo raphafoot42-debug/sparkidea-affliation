@@ -3,9 +3,9 @@ import { useRouter } from 'next/router'
 import { createClient } from '@/lib/supabase-client'
 
 const pageTitles: Record<string, string> = {
-  dashboard: 'Tableau de bord',  
+  dashboard: 'Tableau de bord',
   liens: 'Mes liens',
-  filleuls: 'Mes filleuls', 
+  filleuls: 'Mes filleuls',
   'sous-affiliation': 'Sous-affiliation',
   guide: 'Guide de vente',
   packs: 'Packs à gagner',
@@ -85,6 +85,11 @@ export default function Dashboard() {
   const [packs, setPacks] = useState<Pack[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [subAffiliates, setSubAffiliates] = useState<SubAffiliate[]>([])
+  const [subCpaByAffiliateId, setSubCpaByAffiliateId] = useState<Record<string, number>>({})
+  const [editSubCpaId, setEditSubCpaId] = useState<string | null>(null)
+  const [editSubCpaEuros, setEditSubCpaEuros] = useState(0)
+  const [savingSubCpaId, setSavingSubCpaId] = useState<string | null>(null)
+  const [subCpaError, setSubCpaError] = useState<string | null>(null)
 
   const [newSubName, setNewSubName] = useState('')
   const [newSubCode, setNewSubCode] = useState('')
@@ -94,12 +99,6 @@ export default function Dashboard() {
   const [messageDraft, setMessageDraft] = useState('')
   const [copiedLink, setCopiedLink] = useState<string | null>(null)
   const [theme, setThemeState] = useState<'dark' | 'light'>('dark')
-
-  const [maxCpaAmountCents, setMaxCpaAmountCents] = useState<number | null>(null)
-  const [editCpaEuros, setEditCpaEuros] = useState(10)
-  const [savingCpa, setSavingCpa] = useState(false)
-  const [cpaError, setCpaError] = useState<string | null>(null)
-  const [cpaSaved, setCpaSaved] = useState(false)
 
   useEffect(() => {
     const saved = (localStorage.getItem('sparkidea-theme') as 'dark' | 'light') || 'dark'
@@ -146,12 +145,9 @@ export default function Dashboard() {
       setMessages(msgs ?? [])
       setSubAffiliates(subs ?? [])
 
-      if (aff) {
-        setEditCpaEuros(aff.cpa_amount_cents / 100)
-        if (aff.parent_affiliate_id) {
-          const capRes = await fetch('/api/my-cpa-cap').then((r) => r.json())
-          setMaxCpaAmountCents(capRes.maxCpaAmountCents ?? null)
-        }
+      if ((subs ?? []).some((s) => s.linked_affiliate_id)) {
+        const cpaRes = await fetch('/api/my-sub-affiliates-cpa').then((r) => r.json())
+        setSubCpaByAffiliateId(cpaRes.cpaByAffiliateId ?? {})
       }
 
       setLoading(false)
@@ -159,29 +155,6 @@ export default function Dashboard() {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  async function saveCpa() {
-    setCpaError(null)
-    setCpaSaved(false)
-    setSavingCpa(true)
-    const res = await fetch('/api/affiliate-self-cpa', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cpaAmountEuros: editCpaEuros }),
-    })
-    const body = await res.json().catch(() => ({}))
-    setSavingCpa(false)
-    if (res.ok) {
-      setAffiliate((prev) => (prev ? { ...prev, cpa_amount_cents: body.cpaAmountCents } : prev))
-      setCpaSaved(true)
-      setTimeout(() => setCpaSaved(false), 2000)
-    } else {
-      setCpaError(body.error ?? 'Une erreur est survenue.')
-      if (typeof body.maxCpaAmountCents === 'number') {
-        setMaxCpaAmountCents(body.maxCpaAmountCents)
-      }
-    }
-  }
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -250,6 +223,35 @@ export default function Dashboard() {
     }
   }
 
+  function startEditSubCpa(s: SubAffiliate) {
+    if (!s.linked_affiliate_id) return
+    setEditSubCpaId(s.linked_affiliate_id)
+    setEditSubCpaEuros((subCpaByAffiliateId[s.linked_affiliate_id] ?? 1000) / 100)
+    setSubCpaError(null)
+  }
+
+  async function saveSubCpa(linkedAffiliateId: string) {
+    setSubCpaError(null)
+    setSavingSubCpaId(linkedAffiliateId)
+    try {
+      const res = await fetch('/api/sub-affiliate-cpa', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedAffiliateId, cpaAmountEuros: editSubCpaEuros }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setSubCpaByAffiliateId((prev) => ({ ...prev, [linkedAffiliateId]: body.cpaAmountCents }))
+        setEditSubCpaId(null)
+      } else {
+        setSubCpaError(body.error ?? `Erreur inattendue (code ${res.status}).`)
+      }
+    } catch (err) {
+      setSubCpaError('Impossible de contacter le serveur. Vérifie ta connexion et réessaie.')
+    }
+    setSavingSubCpaId(null)
+  }
+
   function copyLink(link: string) {
     navigator.clipboard?.writeText(link).catch(() => {})
     setCopiedLink(link)
@@ -287,7 +289,7 @@ export default function Dashboard() {
     ? 'error'
     : null
 
-  const link = `spark-idea.com/?ref=${affiliate.referral_code}`
+  const link = `https://spark-idea-two.vercel.app/?ref=${affiliate.referral_code}`
   const totalRevenue = payouts.reduce((sum, p) => sum + p.amount_cents, 0)
   const activeReferrals = referrals.filter((r) => r.status === 'active')
   const activeSubAffiliatesCount = subAffiliates.filter((s) => s.active).length
@@ -492,27 +494,19 @@ export default function Dashboard() {
             <div className="card" style={{ marginBottom: 20 }}>
               <div className="card-head"><h3>Comment ça marche</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
-                {affiliate.parent_affiliate_id ? (
-                  <>
-                    Tu crées un sous-affilié avec un code. Il obtient un lien pour ses clients, comptés sous ton
-                    compte. C&apos;est <b>toi</b> qui gères et verses sa part, comme tu le souhaites — Spark Idea ne
-                    s&apos;occupe que de ta commission à toi. (Comme tu es toi-même un sous-affilié activé, tes
-                    propres sous-affiliés ne peuvent pas être payés automatiquement par Spark Idea — c&apos;est
-                    plafonné à 2 niveaux.)
-                  </>
-                ) : (
-                  <>
-                    Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
-                    sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
-                    connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, avec son propre CPA fixe
-                    par client validé (10€ pour commencer). C&apos;est <b>lui</b> qui règle son CPA depuis ses
-                    Paramètres, dans la limite du tien — s&apos;il ne peut pas dépasser {euros(affiliate.cpa_amount_cents)}
-                    tant que ton propre CPA reste à ce niveau. Tant qu&apos;il n&apos;a pas créé son compte, c&apos;est
-                    à toi de le payer toi-même sur ses ventes via le lien client. Une fois activé, il peut lui aussi
-                    créer des sous-affiliés — mais ceux-là restent toujours payés à la main par lui, jamais par
-                    Spark Idea.
-                  </>
-                )}
+                Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
+                sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
+                connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, avec son propre CPA fixe
+                par client validé (10€ pour commencer). C&apos;est <b>toi</b>, depuis cette page, qui règles son
+                CPA — jamais lui-même — et ça ne peut jamais dépasser ton propre CPA à toi
+                ({euros(affiliate.cpa_amount_cents)}). Tant qu&apos;il n&apos;a pas créé son compte, c&apos;est à
+                toi de le payer toi-même sur ses ventes via le lien client.
+                <br /><br />
+                Une fois son compte activé, il peut lui aussi créer ses propres sous-affiliés, exactement de la
+                même façon : eux aussi seront payés automatiquement par Spark Idea une fois activés, et c&apos;est
+                <b> lui</b> (pas toi, pas eux-mêmes) qui réglera leur CPA — plafonné au sien. La règle se répète à
+                chaque niveau : seul l&apos;admin de Spark Idea peut aller au-delà, et seule la personne qui a
+                recruté quelqu&apos;un directement peut régler son CPA.
               </div>
             </div>
 
@@ -550,33 +544,59 @@ export default function Dashboard() {
                 <div style={{ fontSize: 13, color: 'var(--muted)' }}>Aucun sous-affilié pour l&apos;instant.</div>
               ) : (
                 <table>
-                  <thead><tr><th>Sous-affilié</th>{!affiliate.parent_affiliate_id && <th>Compte</th>}<th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th></th></tr></thead>
+                  <thead><tr><th>Sous-affilié</th><th>Compte</th><th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th>Son CPA</th><th></th></tr></thead>
                   <tbody>
                     {subAffiliates.map((s) => {
                       const origin = typeof window !== 'undefined' ? window.location.origin : ''
-                      const clientLink = `spark-idea.com/?ref=${affiliate.referral_code}&sub=${s.code}`
+                      const clientLink = `https://spark-idea-two.vercel.app/?ref=${affiliate.referral_code}&sub=${s.code}`
                       const inviteLink = `${origin}/signup?invite=${affiliate.referral_code}&subcode=${s.code}`
-                      const canInvite = !affiliate.parent_affiliate_id
+                      // Récursif : n'importe quel affilié, à n'importe quel niveau, peut
+                      // inviter ses propres sous-affiliés à activer un vrai compte. Pas
+                      // de plafond de profondeur — chacun gère ce qu'il a recruté
+                      // directement, plafonné à son propre CPA (voir sub-affiliate-cpa.ts).
                       return (
                         <tr key={s.id}>
                           <td>{s.name || s.code}</td>
-                          {canInvite && (
-                            <td>
-                              {s.linked_affiliate_id ? (
-                                <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé (payé auto)</span>
-                              ) : (
-                                <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>
-                              )}
-                            </td>
-                          )}
+                          <td>
+                            {s.linked_affiliate_id ? (
+                              <span style={{ color: '#4ade80', fontSize: 12 }}>✅ Activé (payé auto)</span>
+                            ) : (
+                              <span style={{ color: 'var(--muted)', fontSize: 12 }}>En attente</span>
+                            )}
+                          </td>
                           <td><span className={`pill ${s.active ? 't2 active-dot' : 't1'}`}>{s.active ? 'Actif' : 'Inactif'}</span></td>
                           <td>{s.clients_count}</td>
                           <td>{euros(s.revenue_generated_cents)}</td>
+                          <td>
+                            {!s.linked_affiliate_id ? (
+                              <span style={{ fontSize: 12, color: 'var(--muted)' }}>—</span>
+                            ) : editSubCpaId === s.linked_affiliate_id ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={affiliate.cpa_amount_cents / 100}
+                                  step={1}
+                                  value={editSubCpaEuros}
+                                  onChange={(e) => setEditSubCpaEuros(Number(e.target.value))}
+                                  style={{ width: 60, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 7, padding: '6px 8px', color: 'var(--text)', fontSize: 12, outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
+                                />
+                                <button className="copy" onClick={() => saveSubCpa(s.linked_affiliate_id!)} disabled={savingSubCpaId === s.linked_affiliate_id}>
+                                  {savingSubCpaId === s.linked_affiliate_id ? '...' : '✅'}
+                                </button>
+                                <button className="btn-ghost" style={{ padding: '5px 8px', fontSize: 11 }} onClick={() => { setEditSubCpaId(null); setSubCpaError(null) }}>✕</button>
+                              </div>
+                            ) : (
+                              <span style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)', fontSize: 13, cursor: 'pointer' }} onClick={() => startEditSubCpa(s)} title="Cliquer pour modifier">
+                                {euros(subCpaByAffiliateId[s.linked_affiliate_id] ?? 0)} ✎
+                              </span>
+                            )}
+                          </td>
                           <td style={{ textAlign: 'right' }}>
                             <button className="copy" onClick={() => copyLink(clientLink)} title="Lien client">
                               {copiedLink === clientLink ? 'Copié !' : 'Lien client'}
                             </button>
-                            {canInvite && !s.linked_affiliate_id && (
+                            {!s.linked_affiliate_id && (
                               <button className="copy" style={{ marginLeft: 6 }} onClick={() => copyLink(inviteLink)} title="Lien d'invitation">
                                 {copiedLink === inviteLink ? 'Copié !' : 'Lien invitation'}
                               </button>
@@ -610,8 +630,9 @@ export default function Dashboard() {
                 </table>
               )}
               {deleteSubError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {deleteSubError}</div>}
+              {subCpaError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>❌ {subCpaError}</div>}
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 12 }}>
-                &quot;Revenu total généré&quot; est indicatif tant que le sous-affilié n&apos;a pas activé son compte. Une fois activé, il est payé automatiquement par Spark Idea, en plus de ta commission à toi.
+                &quot;Revenu total généré&quot; est indicatif tant que le sous-affilié n&apos;a pas activé son compte. Une fois activé, il est payé automatiquement par Spark Idea, en plus de ta commission à toi. Clique sur son CPA pour le modifier toi-même — il ne pourra jamais dépasser le tien ({euros(affiliate.cpa_amount_cents)}).
               </div>
             </div>
           </section>
@@ -794,32 +815,10 @@ export default function Dashboard() {
                   <a className="btn-primary" href="/api/stripe-connect" style={{ textDecoration: 'none' }}>Connecter</a>
                 )}
               </div>
-              {affiliate.parent_affiliate_id ? (
-                <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-                  <div><div className="label">Ton CPA actuel</div><div className="desc">C&apos;est toi qui le règles, dans la limite de {maxCpaAmountCents !== null ? euros(maxCpaAmountCents) : '...'} (le CPA de la personne qui t&apos;a recruté).</div></div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input
-                        type="number"
-                        min={0}
-                        max={maxCpaAmountCents !== null ? maxCpaAmountCents / 100 : undefined}
-                        step={1}
-                        value={editCpaEuros}
-                        onChange={(e) => setEditCpaEuros(Number(e.target.value))}
-                        style={{ width: 90, background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
-                      />
-                      <span className="static">€</span>
-                    </div>
-                    <button className="btn-primary" onClick={saveCpa} disabled={savingCpa}>{savingCpa ? '...' : cpaSaved ? '✅ Enregistré' : 'Enregistrer'}</button>
-                  </div>
-                  {cpaError && <div style={{ fontSize: 11.5, color: '#f87171' }}>{cpaError}</div>}
-                </div>
-              ) : (
-                <div className="settings-row">
-                  <div><div className="label">Ton CPA actuel</div><div className="desc">Montant reçu par client validé — ajusté manuellement par l&apos;équipe Spark Idea</div></div>
-                  <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>{euros(affiliate.cpa_amount_cents)}</span>
-                </div>
-              )}
+              <div className="settings-row">
+                <div><div className="label">Ton CPA actuel</div><div className="desc">{affiliate.parent_affiliate_id ? "Réglé par la personne qui t'a recruté, ou par l'équipe Spark Idea — tu ne peux pas le modifier toi-même." : "Montant reçu par client validé — ajusté manuellement par l'équipe Spark Idea"}</div></div>
+                <span className="static" style={{ fontFamily: "'JetBrains Mono',monospace", color: 'var(--cyan)' }}>{euros(affiliate.cpa_amount_cents)}</span>
+              </div>
               <div className="settings-row">
                 <div><div className="label">Ton lien</div><div className="desc">{link}</div></div>
                 <button className="btn-ghost" onClick={() => nav('liens')}>Voir mes liens</button>
