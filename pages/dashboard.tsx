@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { createClient } from '@/lib/supabase-client'
 
 const pageTitles: Record<string, string> = {
-  dashboard: 'Tableau de bord', 
+  dashboard: 'Tableau de bord',  
   liens: 'Mes liens',
   filleuls: 'Mes filleuls', 
   'sous-affiliation': 'Sous-affiliation',
