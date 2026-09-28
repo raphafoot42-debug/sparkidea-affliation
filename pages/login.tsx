@@ -76,7 +76,7 @@ export default function LoginPage() {
         </button>
 
         <div className="auth-switch-link">
-          Pas encore de compte ? <Link href="/signup">S&apos;inscrire</Link>
+          Pas encore de compte ? <Link href="/affiliate/signup">S&apos;inscrire</Link>
         </div>
       </form>
     </div>

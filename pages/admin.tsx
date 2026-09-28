@@ -120,7 +120,7 @@ export default function Admin() {
   const [createName, setCreateName] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [createResult, setCreateResult] = useState<{ inviteLink: string; referralCode: string } | null>(null)
+  const [createResult, setCreateResult] = useState<{ trackingLink?: string; referralCode: string; signupUrl?: string } | null>(null)
   const [copiedInvite, setCopiedInvite] = useState(false)
 
   // ⚠️ Vérification d'accès CÔTÉ NAVIGATEUR UNIQUEMENT — voir le TODO dans
@@ -456,19 +456,21 @@ export default function Admin() {
                   {createResult ? (
                     <div>
                       <div style={{ fontSize: 13, color: '#4ade80', marginBottom: 10 }}>
-                        ✅ Compte créé (code {createResult.referralCode}). Envoie-lui ce lien pour qu&apos;il se connecte
-                        directement et n&apos;ait plus qu&apos;à connecter son Stripe :
+                        ✅ Compte créé (code affilié unique : {createResult.referralCode}).
+                        Son lien de tracking personnel généré automatiquement :
                       </div>
-                      <div className="link-tag" style={{ marginBottom: 10, wordBreak: 'break-all' }}>{createResult.inviteLink}</div>
+                      <div className="link-tag" style={{ marginBottom: 10, wordBreak: 'break-all' }}>{createResult.trackingLink}</div>
                       <button
                         className="copy"
                         onClick={() => {
-                          navigator.clipboard.writeText(createResult.inviteLink)
-                          setCopiedInvite(true)
-                          setTimeout(() => setCopiedInvite(false), 1500)
+                          if (createResult.trackingLink) {
+                            navigator.clipboard.writeText(createResult.trackingLink)
+                            setCopiedInvite(true)
+                            setTimeout(() => setCopiedInvite(false), 1500)
+                          }
                         }}
                       >
-                        {copiedInvite ? 'Copié !' : 'Copier le lien'}
+                        {copiedInvite ? 'Copié !' : 'Copier le lien de tracking'}
                       </button>
                       <button className="btn-ghost" style={{ marginLeft: 8 }} onClick={resetCreateForm}>Créer un autre compte</button>
                     </div>
