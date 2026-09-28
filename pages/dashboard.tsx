@@ -118,7 +118,7 @@ export default function Dashboard() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.replace('/signup')
+        router.replace('/affiliate/signup')
         return
       }
 
@@ -289,7 +289,10 @@ export default function Dashboard() {
     ? 'error'
     : null
 
-  const link = `https://spark-idea-two.vercel.app/?ref=${affiliate.referral_code}`
+  const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://sparkidea-affliation.vercel.app'
+  const clientLink = `https://spark-idea-two.vercel.app/?ref=${affiliate.referral_code}`
+  const inviteLink = `${appOrigin}/affiliate/signup?invite=${affiliate.referral_code}`
+  const link = clientLink
   const totalRevenue = payouts.reduce((sum, p) => sum + p.amount_cents, 0)
   const activeReferrals = referrals.filter((r) => r.status === 'active')
   const activeSubAffiliatesCount = subAffiliates.filter((s) => s.active).length
@@ -421,19 +424,33 @@ export default function Dashboard() {
         {activeTab === 'liens' && (
           <section className="page active">
             <div className="eyebrow">Programme d&apos;affiliation</div>
-            <h1>Mes liens</h1>
-            <div className="sub">Ton lien de parrainage et ce qu&apos;il a rapporté.</div>
+            <h1>Mes liens personnels</h1>
+            <div className="sub">Tes deux liens uniques pour les ventes clients et le recrutement de sous-affiliés.</div>
 
             <div className="card" style={{ marginBottom: 20 }}>
-              <h3 style={{ marginBottom: 14 }}>Lien principal</h3>
+              <h3 style={{ marginBottom: 6 }}>1. Lien de tracking client (Ventes Spark Idea)</h3>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+                À partager à tes futurs clients. Dès qu&apos;ils achètent sur Spark Idea, la vente te sera automatiquement attribuée.
+              </p>
               <div className="link-box">
-                {link}
-                <button className="copy" onClick={() => copyLink(link)}>{copiedLink === link ? 'Copié !' : 'Copier'}</button>
+                {clientLink}
+                <button className="copy" onClick={() => copyLink(clientLink)}>{copiedLink === clientLink ? 'Copié !' : 'Copier mon lien'}</button>
               </div>
               <div style={{ marginTop: 16, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
                 {affiliate.stripe_connected
                   ? `Stripe connecté — ton CPA de ${euros(affiliate.cpa_amount_cents)} est versé automatiquement dès qu'un client que tu ramènes est validé.`
                   : 'Connecte ton compte Stripe dans Paramètres pour pouvoir être payé.'}
+              </div>
+            </div>
+
+            <div className="card" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginBottom: 6 }}>2. Lien d&apos;invitation sous-affilié</h3>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+                À partager aux personnes qui veulent devenir affiliées avec toi. Elles s&apos;inscrivent seules et deviennent automatiquement tes sous-affiliées.
+              </p>
+              <div className="link-box">
+                {inviteLink}
+                <button className="copy" onClick={() => copyLink(inviteLink)}>{copiedLink === inviteLink ? 'Copié !' : 'Copier mon lien invitation'}</button>
               </div>
             </div>
 
@@ -492,50 +509,14 @@ export default function Dashboard() {
             <div className="sub">Crée des sous-affiliés qui recrutent des clients pour toi.</div>
 
             <div className="card" style={{ marginBottom: 20 }}>
-              <div className="card-head"><h3>Comment ça marche</h3></div>
+              <div className="card-head"><h3>Ton lien d&apos;invitation automatique</h3></div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.7 }}>
-                Tu crées un sous-affilié avec un code. Il a deux liens : un lien client (ses ventes, comptées
-                sous toi) et un lien d&apos;invitation pour créer son propre compte. S&apos;il crée son compte et
-                connecte son Stripe, il est payé <b>automatiquement</b> par Spark Idea, avec son propre CPA fixe
-                par client validé (10€ pour commencer). C&apos;est <b>toi</b>, depuis cette page, qui règles son
-                CPA — jamais lui-même — et ça ne peut jamais dépasser ton propre CPA à toi
-                ({euros(affiliate.cpa_amount_cents)}). Tant qu&apos;il n&apos;a pas créé son compte, c&apos;est à
-                toi de le payer toi-même sur ses ventes via le lien client.
-                <br /><br />
-                Une fois son compte activé, il peut lui aussi créer ses propres sous-affiliés, exactement de la
-                même façon : eux aussi seront payés automatiquement par Spark Idea une fois activés, et c&apos;est
-                <b> lui</b> (pas toi, pas eux-mêmes) qui réglera leur CPA — plafonné au sien. La règle se répète à
-                chaque niveau : seul l&apos;admin de Spark Idea peut aller au-delà, et seule la personne qui a
-                recruté quelqu&apos;un directement peut régler son CPA.
+                Partage simplement ton lien d&apos;invitation personnel ci-dessous. Toute personne se connectant via ce lien créera son propre compte affilié et deviendra <b>automatiquement</b> ton sous-affilié rattaché.
               </div>
-            </div>
-
-            <div className="card" style={{ marginBottom: 20 }}>
-              <div className="card-head"><h3>Créer un sous-affilié</h3></div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.05em' }}>Nom (optionnel)</label>
-                  <input
-                    type="text"
-                    placeholder="Ex : Nathan"
-                    value={newSubName}
-                    onChange={(e) => setNewSubName(e.target.value)}
-                    style={{ width: '100%', background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'Inter',sans-serif" }}
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.05em' }}>Code du sous-affilié</label>
-                  <input
-                    type="text"
-                    placeholder='Ex : "NATHAN23"'
-                    value={newSubCode}
-                    onChange={(e) => setNewSubCode(e.target.value)}
-                    style={{ width: '100%', background: 'var(--panel-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', fontFamily: "'JetBrains Mono',monospace" }}
-                  />
-                </div>
-                <button className="btn-primary" onClick={handleCreateSubAffiliate}>+ Créer le lien</button>
+              <div className="link-box" style={{ marginTop: 14 }}>
+                {inviteLink}
+                <button className="copy" onClick={() => copyLink(inviteLink)}>{copiedLink === inviteLink ? 'Copié !' : 'Copier mon lien invitation'}</button>
               </div>
-              {subError && <div style={{ fontSize: 11.5, color: '#f87171', marginTop: 10 }}>{subError}</div>}
             </div>
 
             <div className="card">
@@ -547,13 +528,7 @@ export default function Dashboard() {
                   <thead><tr><th>Sous-affilié</th><th>Compte</th><th>Statut</th><th>Clients apportés</th><th>Revenu total généré</th><th>Son CPA</th><th></th></tr></thead>
                   <tbody>
                     {subAffiliates.map((s) => {
-                      const origin = typeof window !== 'undefined' ? window.location.origin : ''
                       const clientLink = `https://spark-idea-two.vercel.app/?ref=${affiliate.referral_code}&sub=${s.code}`
-                      const inviteLink = `${origin}/signup?invite=${affiliate.referral_code}&subcode=${s.code}`
-                      // Récursif : n'importe quel affilié, à n'importe quel niveau, peut
-                      // inviter ses propres sous-affiliés à activer un vrai compte. Pas
-                      // de plafond de profondeur — chacun gère ce qu'il a recruté
-                      // directement, plafonné à son propre CPA (voir sub-affiliate-cpa.ts).
                       return (
                         <tr key={s.id}>
                           <td>{s.name || s.code}</td>
@@ -596,11 +571,6 @@ export default function Dashboard() {
                             <button className="copy" onClick={() => copyLink(clientLink)} title="Lien client">
                               {copiedLink === clientLink ? 'Copié !' : 'Lien client'}
                             </button>
-                            {!s.linked_affiliate_id && (
-                              <button className="copy" style={{ marginLeft: 6 }} onClick={() => copyLink(inviteLink)} title="Lien d'invitation">
-                                {copiedLink === inviteLink ? 'Copié !' : 'Lien invitation'}
-                              </button>
-                            )}
                             <button className="btn-ghost" style={{ padding: '6px 12px', fontSize: 11, marginLeft: 6 }} onClick={() => toggleSubAffiliate(s)}>
                               {s.active ? 'Désactiver' : 'Activer'}
                             </button>

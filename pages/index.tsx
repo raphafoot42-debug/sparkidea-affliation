@@ -463,7 +463,7 @@ export default function HomePage() {
           plus ton CPA peut augmenter — sans plafond fixé à l&apos;avance.
         </p>
         <div className="hero-ctas">
-          <Link href="/signup" className="btn btn-primary">Devenir affilié</Link>
+        <Link href="/affiliate/signup" className="btn btn-primary">Devenir affilié</Link>
           <a href="https://spark-idea-two.vercel.app/" target="_blank" rel="noopener noreferrer" className="btn btn-square">
             Essayer Spark Idea
           </a>
