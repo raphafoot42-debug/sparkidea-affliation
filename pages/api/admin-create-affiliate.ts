@@ -95,6 +95,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: lastError?.message ?? 'Erreur création affilié' })
     }
 
+    // 4. Si type === 'sub' et qu'un parent est renseigné, insérer aussi dans sub_affiliates
+    if (type === 'sub' && parentAffiliateId) {
+      const { error: subErr } = await admin.from('sub_affiliates').insert({
+        affiliate_id: parentAffiliateId,
+        code: refCode,
+        name: name || cleanEmail.split('@')[0],
+        linked_affiliate_id: userId,
+        active: true,
+      })
+      if (subErr) {
+        console.error('Erreur insertion sub_affiliates admin:', subErr)
+      }
+    }
+
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '')
 
     return res.status(200).json({

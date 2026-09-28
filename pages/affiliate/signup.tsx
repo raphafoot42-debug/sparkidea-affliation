@@ -72,10 +72,18 @@ export default function AffiliateSignupPage() {
 
       if (signupError || !data.user) {
         if (signupError?.message?.toLowerCase().includes('already registered') || signupError?.message?.toLowerCase().includes('already in use')) {
-          setError('Un compte existe déjà avec cet email. Veuillez vous connecter.')
+          setError('Un compte existe déjà avec cet email. Passe en mode connexion ci-dessous.')
+          setMode('login')
         } else {
           setError(signupError?.message ?? "Erreur lors de l'inscription.")
         }
+        return
+      }
+
+      // Si l'email existe déjà dans Supabase Auth (confirmation automatique désactivée ou déjà inscrit), Supabase renvoie data.user avec un tableau identities vide.
+      if (data.user.identities && data.user.identities.length === 0) {
+        setError('Un compte existe déjà avec cet email. Connecte-toi ci-dessous.')
+        setMode('login')
         return
       }
 
@@ -136,18 +144,19 @@ export default function AffiliateSignupPage() {
         return
       }
 
-      // 3. Si rattaché à un parent, créer l'entrée dans 'sub_affiliates' pour qu'il apparaisse directement dans son tableau
-      if (parentAffiliateId) {
-        const { error: subErr } = await supabase.from('sub_affiliates').insert({
-          affiliate_id: parentAffiliateId,
-          code: newRefCode,
-          name: cleanEmail.split('@')[0],
-          linked_affiliate_id: data.user.id,
-          active: true,
+      // 3. Si rattaché à un parent via inviteCode, appeler la route API serveur (bypass RLS)
+      if (inviteCode && parentAffiliateId) {
+        await fetch('/api/activate-sub-affiliate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newAffiliateId: data.user.id,
+            inviteCode,
+            newRefCode,
+          }),
+        }).catch((err) => {
+          console.error('Erreur activation sous-affilié serveur:', err)
         })
-        if (subErr) {
-          console.error('Erreur création sub_affiliates auto:', subErr)
-        }
       }
 
       // Redirection vers l'intégration Stripe Connect
