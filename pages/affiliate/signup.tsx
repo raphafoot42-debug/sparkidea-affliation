@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase-client'
 
 const ADMIN_DEMO_CODE = '2909.42'
@@ -23,6 +22,9 @@ export default function AffiliateSignupPage() {
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [adminCode, setAdminCode] = useState('')
   const [adminError, setAdminError] = useState(false)
+
+  // Récupérer le code de parrainage/invitation dans l'URL ?invite=...
+  const inviteCode = typeof router.query.invite === 'string' ? router.query.invite.trim() : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -62,7 +64,7 @@ export default function AffiliateSignupPage() {
         return
       }
 
-      // Mode Inscription (Public)
+      // Mode Inscription (Public / Invité)
       const { data, error: signupError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -77,27 +79,53 @@ export default function AffiliateSignupPage() {
         return
       }
 
-      // Tenter d'insérer l'affilié avec tentative de gestion des collisions de referral_code
+      // 1. Rechercher si un parent existe pour inviteCode
+      let parentAffiliateId: string | null = null
+      let parentCpaAmountCents: number | null = null
+
+      if (inviteCode) {
+        const { data: parent } = await supabase
+          .from('affiliates')
+          .select('id, cpa_amount_cents')
+          .eq('referral_code', inviteCode)
+          .single()
+
+        if (parent) {
+          parentAffiliateId = parent.id
+          parentCpaAmountCents = parent.cpa_amount_cents
+        }
+      }
+
+      // 2. Insérer l'affilié
       let inserted = false
       let attempts = 0
       let lastInsertError: any = null
+      let newRefCode = ''
 
       while (!inserted && attempts < 5) {
         attempts++
-        const refCode = generateReferralCode(cleanEmail)
-        const { error: insertError } = await supabase.from('affiliates').insert({
+        newRefCode = generateReferralCode(cleanEmail)
+
+        const insertPayload: any = {
           id: data.user.id,
           email: cleanEmail,
-          referral_code: refCode,
-        })
+          referral_code: newRefCode,
+          parent_affiliate_id: parentAffiliateId,
+        }
+
+        // Si parent, s'assurer que le CPA ne dépasse pas celui du parent
+        if (parentCpaAmountCents !== null) {
+          insertPayload.cpa_amount_cents = Math.min(1000, parentCpaAmountCents)
+        }
+
+        const { error: insertError } = await supabase.from('affiliates').insert(insertPayload)
 
         if (!insertError) {
           inserted = true
         } else {
           lastInsertError = insertError
-          // Si c'est déjà inséré pour cet id utilisateur (ex: retry)
           if (insertError.code === '23505' && insertError.message?.includes('affiliates_pkey')) {
-            inserted = true; // Utilisateur déjà créé dans la table
+            inserted = true
           }
         }
       }
@@ -106,6 +134,20 @@ export default function AffiliateSignupPage() {
         console.error('Erreur insertion affiliate:', lastInsertError)
         setError(`Compte créé mais erreur lors de l'initialisation : ${lastInsertError?.message ?? 'Erreur inconnue'}`)
         return
+      }
+
+      // 3. Si rattaché à un parent, créer l'entrée dans 'sub_affiliates' pour qu'il apparaisse directement dans son tableau
+      if (parentAffiliateId) {
+        const { error: subErr } = await supabase.from('sub_affiliates').insert({
+          affiliate_id: parentAffiliateId,
+          code: newRefCode,
+          name: cleanEmail.split('@')[0],
+          linked_affiliate_id: data.user.id,
+          active: true,
+        })
+        if (subErr) {
+          console.error('Erreur création sub_affiliates auto:', subErr)
+        }
       }
 
       // Redirection vers l'intégration Stripe Connect
@@ -139,9 +181,11 @@ export default function AffiliateSignupPage() {
           <span></span>
         </div>
         <div className="auth-icon step1">✦</div>
-        <h2>{mode === 'signup' ? 'Inscris-toi au programme affilié' : 'Connecte-toi'}</h2>
+        <h2>{inviteCode ? 'Rejoins l\u2019équipe affiliée' : mode === 'signup' ? 'Inscris-toi au programme affilié' : 'Connecte-toi'}</h2>
         <p>
-          {mode === 'signup'
+          {inviteCode
+            ? 'Crée ton compte affilié pour générer tes propres revenus et recevoir tes commissions automatiquement.'
+            : mode === 'signup'
             ? 'Crée ton compte en 1 minute et obtiens immédiatement ton lien de tracking personnel pour commencer à toucher des commissions.'
             : 'Retrouve ton dashboard affilié et tes statistiques.'}
         </p>
